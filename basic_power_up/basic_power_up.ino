@@ -77,9 +77,9 @@ void setup() {
   Serial.begin(115200);
 
   // GRBW logical colors: Color(r, g, b, w)
-  colors[0] = strip.Color(0, 50, 0, 0);   // green
-  colors[1] = strip.Color(50, 0, 0, 0);   // red
-  colors[2] = strip.Color(0, 0, 50, 0);   // blue
+  colors[0] = strip.Color(0, 50, 0, 40);   // green
+  colors[1] = strip.Color(50, 0, 0, 40);   // red
+  colors[2] = strip.Color(0, 0, 50, 40);   // blue
   colors[3] = strip.Color(0, 0, 0, 50);   // white
 
   currentColorIndex = 0;
