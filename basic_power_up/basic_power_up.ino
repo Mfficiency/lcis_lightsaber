@@ -2,7 +2,6 @@
 // Include your MPU library here
 // #include <Wire.h>
 // #include <MPU6050.h>
-// test
 
 // ------------------------------------------------------
 // CONFIG
@@ -71,6 +70,7 @@ void setup() {
 
 void loop() {
   fillUp();
+  delay(500);
   emptyDown();
 }
 
@@ -82,7 +82,7 @@ void fillUp() {
   unsigned long stepDelay = FILL_TIME_MS / LED_COUNT;
 
   for (int i = 0; i < LED_COUNT; i++) {
-    strip.setPixelColor(i, strip.Color(0, 0, 50, 20));
+    strip.setPixelColor(i, strip.Color(0, 50, 0, 0)); // GRBW
     strip.show();
 
     updateSensors();
