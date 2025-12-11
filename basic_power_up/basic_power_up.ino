@@ -1,4 +1,5 @@
 #include <Adafruit_NeoPixel.h>
+#include <math.h>
 // Include your MPU library here
 // #include <Wire.h>
 // #include <MPU6050.h>
@@ -22,7 +23,8 @@ const float GYRO_THRESHOLD = 5.0;           // degrees change to log
 // GLOBALS
 // ------------------------------------------------------
 
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGBW + NEO_KHZ800);
+// GRBW strip
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRBW + NEO_KHZ800);
 
 // button state
 int lastButtonState = HIGH;
@@ -36,11 +38,17 @@ float lastLoggedTilt = 0.0;
 unsigned long lastBlink = 0;
 bool blinkState = false;
 
+// color cycling
+const int NUM_COLORS = 4;
+uint32_t colors[NUM_COLORS];
+int currentColorIndex = 0;
+uint32_t currentColor = 0;
+
 // ------------------------------------------------------
 // FORWARD DECLARATIONS
 // ------------------------------------------------------
 
-void readMPU();          
+void readMPU();
 float getTiltValue();
 
 void updateSensors();
@@ -62,6 +70,15 @@ void setup() {
   strip.show();
 
   Serial.begin(115200);
+
+  // GRBW logical colors: Color(r, g, b, w)
+  colors[0] = strip.Color(0, 50, 0, 0);   // green
+  colors[1] = strip.Color(50, 0, 0, 0);   // red
+  colors[2] = strip.Color(0, 0, 50, 0);   // blue
+  colors[3] = strip.Color(0, 0, 0, 50);   // white
+
+  currentColorIndex = 0;
+  currentColor = colors[currentColorIndex];
 }
 
 // ------------------------------------------------------
@@ -82,7 +99,7 @@ void fillUp() {
   unsigned long stepDelay = FILL_TIME_MS / LED_COUNT;
 
   for (int i = 0; i < LED_COUNT; i++) {
-    strip.setPixelColor(i, strip.Color(0, 50, 0, 0)); // GRBW
+    strip.setPixelColor(i, currentColor);
     strip.show();
 
     updateSensors();
@@ -119,6 +136,10 @@ void updateSensors() {
   if (state == LOW && lastButtonState == HIGH) {
     Serial.println("Button pressed");
     buttonHeld = true;
+
+    // cycle fill color on each press
+    currentColorIndex = (currentColorIndex + 1) % NUM_COLORS;
+    currentColor = colors[currentColorIndex];
   }
 
   if (state == HIGH && lastButtonState == LOW) {
@@ -163,7 +184,7 @@ void updateStatusLed() {
 // ------------------------------------------------------
 
 void readMPU() {
-  // TODO: students implement gyro reading
+  // TODO: students implement gyro reading and set currentTilt
 }
 
 float getTiltValue() {
