@@ -14,6 +14,7 @@
 
 const int BUTTON_PIN = 0;            // button to GND, use internal pullup
 const int INT_LED_PIN = 8;           // built in LED
+const int BUZZER_PIN = 10;           // NEW: buzzer for end beep
 
 const unsigned long FILL_TIME_MS   = 2000;   // 2 seconds up
 const unsigned long EMPTY_TIME_MS  = 2000;   // 2 seconds down
@@ -44,8 +45,11 @@ uint32_t colors[NUM_COLORS];
 int currentColorIndex = 0;
 uint32_t currentColor = 0;
 
-// orientation mode flag
+// orientation mode flag (falling ball)
 bool orientationMode = false;
+
+// NEW: timer mode flag
+bool timerMode = false;
 
 // ------------------------------------------------------
 // FORWARD DECLARATIONS
@@ -60,7 +64,10 @@ void updateStatusLed();
 void fillUp();
 void emptyDown();
 
-void showOrientation();   // now: falling ball animation
+void showOrientation();   // falling ball animation
+void showTimerMode();     // NEW: hold to fill, release to countdown
+
+void beepEnd();           // NEW: small beep at end
 
 // ------------------------------------------------------
 // SETUP
@@ -69,6 +76,8 @@ void showOrientation();   // now: falling ball animation
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(INT_LED_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);       // NEW
+  digitalWrite(BUZZER_PIN, LOW);     // NEW
 
   strip.begin();
   strip.setBrightness(LED_BRIGHTNESS);
@@ -77,10 +86,10 @@ void setup() {
   Serial.begin(115200);
 
   // GRBW logical colors: Color(r, g, b, w)
-  colors[0] = strip.Color(0, 50, 0, 40);   // green
-  colors[1] = strip.Color(50, 0, 0, 40);   // red
+  colors[1] = strip.Color(0, 50, 0, 40);   // green
+  colors[0] = strip.Color(50, 0, 0, 40);   // red
   colors[2] = strip.Color(0, 0, 50, 40);   // blue
-  colors[3] = strip.Color(0, 0, 0, 50);   // white
+  colors[3] = strip.Color(0, 0, 0, 50);    // white
 
   currentColorIndex = 0;
   currentColor = colors[currentColorIndex];
@@ -95,6 +104,11 @@ void loop() {
     updateSensors();
     updateStatusLed();
     showOrientation();
+    delay(50);
+  } else if (timerMode) {           // NEW: timer mode handling
+    updateSensors();
+    updateStatusLed();
+    showTimerMode();
     delay(50);
   } else {
     fillUp();
@@ -149,18 +163,21 @@ void updateSensors() {
     Serial.println("Button pressed");
     buttonHeld = true;
 
-    if (!orientationMode) {
-      // go to next color or orientation mode
+    if (!orientationMode && !timerMode) {
+      // go to next color or orientation mode (5th press)
       if (currentColorIndex < NUM_COLORS - 1) {
         currentColorIndex++;
         currentColor = colors[currentColorIndex];
       } else {
-        // 5th press: enter orientation (falling ball) mode
-        orientationMode = true;
+        orientationMode = true;  // 5th press
       }
-    } else {
-      // exit orientation mode, back to first color
+    } else if (orientationMode) {
+      // 6th press: leave orientation, enter timer mode
       orientationMode = false;
+      timerMode = true;
+    } else if (timerMode) {
+      // next press: exit timer mode back to first color
+      timerMode = false;
       currentColorIndex = 0;
       currentColor = colors[currentColorIndex];
     }
@@ -238,6 +255,117 @@ void showOrientation() {
     pos = 0;
     dir = 1;
   }
+}
+
+// ------------------------------------------------------
+// TIMER MODE: ends marker, timed fill, timed countdown
+// ------------------------------------------------------
+
+void showTimerMode() {
+  static bool counting = false;
+  static bool filling = false;
+  static int ledsLit = 0;
+  static unsigned long lastStep = 0;
+  static unsigned long pressStart = 0;
+
+  const unsigned long holdThreshold = 1000;      // 1 second to start filling
+  const unsigned long fillInterval  = 333;       // 3 LEDs per second
+  const unsigned long stepInterval  = 1000;      // 1 LED per second countdown
+
+  unsigned long now = millis();
+
+  // If we are counting down
+  if (counting) {
+    if (now - lastStep >= stepInterval) {
+      lastStep += stepInterval;
+      if (ledsLit > 0) {
+        ledsLit--;
+      }
+
+      strip.clear();
+      for (int i = 0; i < ledsLit; i++) {
+        strip.setPixelColor(i, strip.Color(50, 0, 0, 0)); // red
+      }
+      strip.show();
+
+      if (ledsLit == 0) {
+        counting = false;
+        beepEnd();
+        // back to idle: show only first and last red
+        strip.clear();
+        strip.setPixelColor(0, strip.Color(50, 0, 0, 0));
+        strip.setPixelColor(LED_COUNT - 1, strip.Color(50, 0, 0, 0));
+        strip.show();
+      }
+    }
+    return;
+  }
+
+  // Not counting: handle button-held logic
+  if (buttonHeld) {
+    // track how long the button has been held
+    if (pressStart == 0) {
+      pressStart = now;
+    }
+
+    if (!filling) {
+      // wait until held > 1s before starting to fill
+      if (now - pressStart >= holdThreshold) {
+        filling = true;
+        lastStep = now;
+      }
+
+      // still waiting: just show first and last red
+      strip.clear();
+      strip.setPixelColor(0, strip.Color(50, 0, 0, 0));
+      strip.setPixelColor(LED_COUNT - 1, strip.Color(50, 0, 0, 0));
+      strip.show();
+    } else {
+      // actively filling at 3 LEDs/s
+      if (now - lastStep >= fillInterval) {
+        lastStep += fillInterval;
+        if (ledsLit < LED_COUNT) {
+          ledsLit++;
+        }
+      }
+
+      strip.clear();
+      for (int i = 0; i < ledsLit; i++) {
+        strip.setPixelColor(i, strip.Color(50, 0, 0, 0)); // red
+      }
+      strip.show();
+    }
+
+  } else {
+    // button not held
+    if (filling && ledsLit > 0) {
+      // we were filling, user released: start countdown
+      filling = false;
+      counting = true;
+      pressStart = 0;
+      lastStep = now;
+      // strip content already reflects ledsLit
+    } else {
+      // idle: only first and last red, waiting for a hold
+      pressStart = 0;
+      filling = false;
+      ledsLit = 0;
+      strip.clear();
+      strip.setPixelColor(0, strip.Color(50, 0, 0, 0));
+      strip.setPixelColor(LED_COUNT - 1, strip.Color(50, 0, 0, 0));
+      strip.show();
+    }
+  }
+}
+
+// ------------------------------------------------------
+// BEEP AT END OF TIMER
+// ------------------------------------------------------
+
+void beepEnd() {
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(100);
+  digitalWrite(BUZZER_PIN, LOW);
 }
 
 // ------------------------------------------------------
