@@ -44,6 +44,9 @@ uint32_t colors[NUM_COLORS];
 int currentColorIndex = 0;
 uint32_t currentColor = 0;
 
+// orientation mode flag
+bool orientationMode = false;
+
 // ------------------------------------------------------
 // FORWARD DECLARATIONS
 // ------------------------------------------------------
@@ -56,6 +59,8 @@ void updateStatusLed();
 
 void fillUp();
 void emptyDown();
+
+void showOrientation();   // now: falling ball animation
 
 // ------------------------------------------------------
 // SETUP
@@ -86,9 +91,16 @@ void setup() {
 // ------------------------------------------------------
 
 void loop() {
-  fillUp();
-  delay(500);
-  emptyDown();
+  if (orientationMode) {
+    updateSensors();
+    updateStatusLed();
+    showOrientation();
+    delay(50);
+  } else {
+    fillUp();
+    delay(500);
+    emptyDown();
+  }
 }
 
 // ------------------------------------------------------
@@ -137,9 +149,21 @@ void updateSensors() {
     Serial.println("Button pressed");
     buttonHeld = true;
 
-    // cycle fill color on each press
-    currentColorIndex = (currentColorIndex + 1) % NUM_COLORS;
-    currentColor = colors[currentColorIndex];
+    if (!orientationMode) {
+      // go to next color or orientation mode
+      if (currentColorIndex < NUM_COLORS - 1) {
+        currentColorIndex++;
+        currentColor = colors[currentColorIndex];
+      } else {
+        // 5th press: enter orientation (falling ball) mode
+        orientationMode = true;
+      }
+    } else {
+      // exit orientation mode, back to first color
+      orientationMode = false;
+      currentColorIndex = 0;
+      currentColor = colors[currentColorIndex];
+    }
   }
 
   if (state == HIGH && lastButtonState == LOW) {
@@ -176,6 +200,43 @@ void updateStatusLed() {
     lastBlink = now;
     blinkState = !blinkState;
     digitalWrite(INT_LED_PIN, blinkState ? HIGH : LOW);
+  }
+}
+
+// ------------------------------------------------------
+// ORIENTATION MODE: FALLING BALL ANIMATION
+// ------------------------------------------------------
+// Lights symmetric LEDs around the middle (29/30)
+// and bounces between center and ends (0/59).
+
+void showOrientation() {
+  static int pos = 0;                     // 0..29, distance from center
+  static int dir = 1;                     // +1 downwards, -1 upwards
+  static unsigned long lastStep = 0;
+  const unsigned long interval = 40;      // ms per step
+
+  unsigned long now = millis();
+  if (now - lastStep < interval) return;
+  lastStep = now;
+
+  strip.clear();
+
+  int left  = 29 - pos;
+  int right = 30 + pos;
+
+  if (left >= 0) strip.setPixelColor(left, strip.Color(0, 0, 0, 50));    // white on GRBW
+  if (right < LED_COUNT) strip.setPixelColor(right, strip.Color(0, 0, 0, 50));
+
+  strip.show();
+
+  pos += dir;
+
+  if (pos >= 29) {
+    pos = 29;
+    dir = -1;
+  } else if (pos <= 0) {
+    pos = 0;
+    dir = 1;
   }
 }
 
