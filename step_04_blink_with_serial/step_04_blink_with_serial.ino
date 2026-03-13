@@ -1,6 +1,9 @@
 // STEP 04: Blink with Serial Messages
 
-const int LED_PIN = 8;
+// Seeed Studio XIAO ESP32-C3 does not have a programmable user LED.
+// Connect an external LED to D10 through a 220-330 ohm resistor, then to GND.
+// 220 ohm is a good default for most standard 3 mm or 5 mm LEDs.
+const int LED_PIN = 10;
 
 void setup() {
   pinMode(LED_PIN, OUTPUT);
