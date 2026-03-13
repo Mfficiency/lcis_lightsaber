@@ -4,7 +4,7 @@
 // XIAO ESP32-C3 D0 -> pushbutton -> GND
 // Uses INPUT_PULLUP, so the pin reads LOW when pressed
 
-const int BUTTON_PIN = 0;
+const int BUTTON_PIN = D0;
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);

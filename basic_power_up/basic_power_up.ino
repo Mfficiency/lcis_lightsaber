@@ -8,13 +8,13 @@
 // CONFIG
 // ------------------------------------------------------
 
-#define LED_PIN        2
+#define LED_PIN        D0
 #define LED_COUNT      60
 #define LED_BRIGHTNESS 80
 
-const int BUTTON_PIN = 0;            // button to GND, use internal pullup
-const int INT_LED_PIN = 8;           // built in LED
-const int BUZZER_PIN = 10;           // buzzer for end beep
+const int BUTTON_PIN = D0;           // button to GND, use internal pullup
+const int INT_LED_PIN = D8;          // built in LED
+const int BUZZER_PIN = D10;          // buzzer for end beep
 
 const unsigned long FILL_TIME_MS   = 2000;   // 2 seconds up
 const unsigned long EMPTY_TIME_MS  = 2000;   // 2 seconds down

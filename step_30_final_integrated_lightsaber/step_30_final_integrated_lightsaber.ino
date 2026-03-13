@@ -5,9 +5,9 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-const int BUTTON_PIN = 0;
-const int BLADE_PIN = 2;
-const int BUZZER_PIN = 10;
+const int BUTTON_PIN = D0;
+const int BLADE_PIN = D0;
+const int BUZZER_PIN = D10;
 const int LED_COUNT = 60;
 const int BLADE_BRIGHTNESS = 80;
 const unsigned long ANIMATION_INTERVAL_MS = 25;

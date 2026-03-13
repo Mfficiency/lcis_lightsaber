@@ -162,9 +162,9 @@ For `step_03_blink_led` and `step_04_blink_with_serial`, use an external LED:
 These sketches mostly use the same pins so students do not have to relearn the wiring each time.
 
 - Single practice LED for step 3 and 4: `D10`
-- LED strip data pin: `GPIO 2`
-- Button pin: `GPIO 0`
-- Buzzer pin: `GPIO 10`
+- LED strip data pin: `D0`
+- Button pin: `D0`
+- Buzzer pin: `D10`
 
 If your class wiring is different, update the pin numbers at the top of each sketch.
 

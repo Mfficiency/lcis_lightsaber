@@ -2,8 +2,8 @@
 
 #include <Adafruit_NeoPixel.h>
 
-const int BUTTON_PIN = 0;
-const int BLADE_PIN = 2;
+const int BUTTON_PIN = D0;
+const int BLADE_PIN = D0;
 const int LED_COUNT = 60;
 const unsigned long STEP_DELAY_MS = 30;
 

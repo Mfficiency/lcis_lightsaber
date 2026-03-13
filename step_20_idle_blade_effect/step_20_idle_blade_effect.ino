@@ -2,7 +2,7 @@
 
 #include <Adafruit_NeoPixel.h>
 
-const int BLADE_PIN = 2;
+const int BLADE_PIN = D0;
 const int LED_COUNT = 60;
 
 Adafruit_NeoPixel strip(LED_COUNT, BLADE_PIN, NEO_GRB + NEO_KHZ800);

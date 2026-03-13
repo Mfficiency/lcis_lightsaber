@@ -6,8 +6,8 @@
 #include <Wire.h>
 
 // Configuration values students can tune easily.
-const int BUTTON_PIN = 0;
-const int BLADE_PIN = 2;
+const int BUTTON_PIN = D0;
+const int BLADE_PIN = D0;
 const int LED_COUNT = 60;
 const int BLADE_BRIGHTNESS = 80;
 const float SWING_THRESHOLD = 4.0;

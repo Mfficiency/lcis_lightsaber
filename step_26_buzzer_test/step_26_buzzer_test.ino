@@ -1,6 +1,6 @@
 // STEP 26: Buzzer Test
 
-const int BUZZER_PIN = 10;
+const int BUZZER_PIN = D10;
 
 void setup() {
 }

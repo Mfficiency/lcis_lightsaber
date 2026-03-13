@@ -5,8 +5,8 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-const int BUTTON_PIN = 0;
-const int BLADE_PIN = 2;
+const int BUTTON_PIN = D0;
+const int BLADE_PIN = D0;
 const int LED_COUNT = 60;
 const float SWING_THRESHOLD = 4.0;
 

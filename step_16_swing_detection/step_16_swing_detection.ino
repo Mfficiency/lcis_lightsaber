@@ -4,7 +4,7 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-const int LED_PIN = 8;
+const int LED_PIN = D8;
 const float SWING_THRESHOLD = 4.0;
 
 Adafruit_MPU6050 mpu;

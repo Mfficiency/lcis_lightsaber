@@ -4,7 +4,7 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-const int BUZZER_PIN = 10;
+const int BUZZER_PIN = D10;
 const float SWING_THRESHOLD = 4.0;
 
 Adafruit_MPU6050 mpu;

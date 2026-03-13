@@ -6,8 +6,8 @@
 // LED cathode (-) -> GND
 // Button uses INPUT_PULLUP, so the pin reads LOW when pressed
 
-const int BUTTON_PIN = 0;
-const int LED_PIN = 8;
+const int BUTTON_PIN = D0;
+const int LED_PIN = D8;
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
