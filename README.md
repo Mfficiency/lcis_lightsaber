@@ -174,3 +174,28 @@ The saber now reacts with both light and sound.
 
 Combine button control, blade animations, motion detection, and sound effects.
 Students finish with a fully interactive lightsaber they programmed step by step.
+
+## Arduino IDE setup
+
+Before compiling a sketch, make sure the Arduino IDE is configured for the correct ESP32-C3 board under `Tools > Board`.
+
+If the wrong board is selected, the sketch can fail with a generic `exit status 1` compilation error even though the code itself is valid.
+
+Required libraries:
+
+- `Adafruit NeoPixel`
+- `Adafruit MPU6050`
+- `Adafruit Unified Sensor`
+
+## Shared hardware assumptions
+
+These sketches use the same pin choices throughout:
+
+- LED strip data pin: `GPIO 2`
+- Button pin: `GPIO 0`
+- Built-in LED: `GPIO 8`
+- Buzzer pin: `GPIO 10`
+
+## Sketch folders
+
+Each lesson has its own numbered Arduino sketch folder, from `step_01_empty_sketch` through `step_30_final_integrated_lightsaber`.
