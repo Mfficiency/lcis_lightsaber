@@ -14,7 +14,7 @@
 
 const int BUTTON_PIN = 0;            // button to GND, use internal pullup
 const int INT_LED_PIN = 8;           // built in LED
-const int BUZZER_PIN = 10;           // NEW: buzzer for end beep
+const int BUZZER_PIN = 10;           // buzzer for end beep
 
 const unsigned long FILL_TIME_MS   = 2000;   // 2 seconds up
 const unsigned long EMPTY_TIME_MS  = 2000;   // 2 seconds down
@@ -48,7 +48,7 @@ uint32_t currentColor = 0;
 // orientation mode flag (falling ball)
 bool orientationMode = false;
 
-// NEW: timer mode flag
+// timer mode flag
 bool timerMode = false;
 
 // ------------------------------------------------------
@@ -64,10 +64,10 @@ void updateStatusLed();
 void fillUp();
 void emptyDown();
 
-void showOrientation();   // falling ball animation
-void showTimerMode();     // NEW: hold to fill, release to countdown
+void showOrientation();
+void showTimerMode();
 
-void beepEnd();           // NEW: small beep at end
+void beepEnd();
 
 // ------------------------------------------------------
 // SETUP
@@ -76,8 +76,8 @@ void beepEnd();           // NEW: small beep at end
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(INT_LED_PIN, OUTPUT);
-  pinMode(BUZZER_PIN, OUTPUT);       // NEW
-  digitalWrite(BUZZER_PIN, LOW);     // NEW
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
 
   strip.begin();
   strip.setBrightness(LED_BRIGHTNESS);
@@ -86,9 +86,9 @@ void setup() {
   Serial.begin(115200);
 
   // GRBW logical colors: Color(r, g, b, w)
-  colors[1] = strip.Color(0, 50, 0, 40);   // green
-  colors[0] = strip.Color(50, 0, 0, 40);   // red
-  colors[2] = strip.Color(0, 0, 50, 40);   // blue
+  colors[2] = strip.Color(0, 50, 0, 40);   // green
+  colors[1] = strip.Color(50, 0, 0, 40);   // red
+  colors[0] = strip.Color(0, 0, 50, 40);   // blue
   colors[3] = strip.Color(0, 0, 0, 50);    // white
 
   currentColorIndex = 0;
@@ -105,7 +105,7 @@ void loop() {
     updateStatusLed();
     showOrientation();
     delay(50);
-  } else if (timerMode) {           // NEW: timer mode handling
+  } else if (timerMode) {
     updateSensors();
     updateStatusLed();
     showTimerMode();
@@ -156,13 +156,13 @@ void emptyDown() {
 // ------------------------------------------------------
 
 void updateSensors() {
-  // button handling
   int state = digitalRead(BUTTON_PIN);
 
   if (state == LOW && lastButtonState == HIGH) {
     Serial.println("Button pressed");
     buttonHeld = true;
 
+    // ONLY change modes when not already in timerMode
     if (!orientationMode && !timerMode) {
       // go to next color or orientation mode (5th press)
       if (currentColorIndex < NUM_COLORS - 1) {
@@ -175,12 +175,12 @@ void updateSensors() {
       // 6th press: leave orientation, enter timer mode
       orientationMode = false;
       timerMode = true;
-    } else if (timerMode) {
-      // next press: exit timer mode back to first color
-      timerMode = false;
-      currentColorIndex = 0;
-      currentColor = colors[currentColorIndex];
     }
+    // else if (timerMode) {  // removed mode exit here
+    //   timerMode = false;
+    //   currentColorIndex = 0;
+    //   currentColor = colors[currentColorIndex];
+    // }
   }
 
   if (state == HIGH && lastButtonState == LOW) {
@@ -206,13 +206,11 @@ void updateSensors() {
 void updateStatusLed() {
   unsigned long now = millis();
 
-  // If button is held, LED stays fully on
   if (buttonHeld) {
     digitalWrite(INT_LED_PIN, HIGH);
     return;
   }
 
-  // Otherwise flicker heartbeat
   if (now - lastBlink > 150) {
     lastBlink = now;
     blinkState = !blinkState;
@@ -223,14 +221,12 @@ void updateStatusLed() {
 // ------------------------------------------------------
 // ORIENTATION MODE: FALLING BALL ANIMATION
 // ------------------------------------------------------
-// Lights symmetric LEDs around the middle (29/30)
-// and bounces between center and ends (0/59).
 
 void showOrientation() {
-  static int pos = 0;                     // 0..29, distance from center
-  static int dir = 1;                     // +1 downwards, -1 upwards
+  static int pos = 0;
+  static int dir = 1;
   static unsigned long lastStep = 0;
-  const unsigned long interval = 40;      // ms per step
+  const unsigned long interval = 40;
 
   unsigned long now = millis();
   if (now - lastStep < interval) return;
@@ -241,7 +237,7 @@ void showOrientation() {
   int left  = 29 - pos;
   int right = 30 + pos;
 
-  if (left >= 0) strip.setPixelColor(left, strip.Color(0, 0, 0, 50));    // white on GRBW
+  if (left >= 0) strip.setPixelColor(left, strip.Color(0, 0, 0, 50));
   if (right < LED_COUNT) strip.setPixelColor(right, strip.Color(0, 0, 0, 50));
 
   strip.show();
@@ -268,13 +264,12 @@ void showTimerMode() {
   static unsigned long lastStep = 0;
   static unsigned long pressStart = 0;
 
-  const unsigned long holdThreshold = 1000;      // 1 second to start filling
+  const unsigned long holdThreshold = 1000;      // 1 second
   const unsigned long fillInterval  = 333;       // 3 LEDs per second
-  const unsigned long stepInterval  = 1000;      // 1 LED per second countdown
+  const unsigned long stepInterval  = 1000;      // 1 LED per second
 
   unsigned long now = millis();
 
-  // If we are counting down
   if (counting) {
     if (now - lastStep >= stepInterval) {
       lastStep += stepInterval;
@@ -284,14 +279,13 @@ void showTimerMode() {
 
       strip.clear();
       for (int i = 0; i < ledsLit; i++) {
-        strip.setPixelColor(i, strip.Color(50, 0, 0, 0)); // red
+        strip.setPixelColor(i, strip.Color(50, 0, 0, 0));
       }
       strip.show();
 
       if (ledsLit == 0) {
         counting = false;
         beepEnd();
-        // back to idle: show only first and last red
         strip.clear();
         strip.setPixelColor(0, strip.Color(50, 0, 0, 0));
         strip.setPixelColor(LED_COUNT - 1, strip.Color(50, 0, 0, 0));
@@ -301,27 +295,22 @@ void showTimerMode() {
     return;
   }
 
-  // Not counting: handle button-held logic
   if (buttonHeld) {
-    // track how long the button has been held
     if (pressStart == 0) {
       pressStart = now;
     }
 
     if (!filling) {
-      // wait until held > 1s before starting to fill
       if (now - pressStart >= holdThreshold) {
         filling = true;
         lastStep = now;
       }
 
-      // still waiting: just show first and last red
       strip.clear();
       strip.setPixelColor(0, strip.Color(50, 0, 0, 0));
       strip.setPixelColor(LED_COUNT - 1, strip.Color(50, 0, 0, 0));
       strip.show();
     } else {
-      // actively filling at 3 LEDs/s
       if (now - lastStep >= fillInterval) {
         lastStep += fillInterval;
         if (ledsLit < LED_COUNT) {
@@ -331,22 +320,18 @@ void showTimerMode() {
 
       strip.clear();
       for (int i = 0; i < ledsLit; i++) {
-        strip.setPixelColor(i, strip.Color(50, 0, 0, 0)); // red
+        strip.setPixelColor(i, strip.Color(50, 0, 0, 0));
       }
       strip.show();
     }
 
   } else {
-    // button not held
     if (filling && ledsLit > 0) {
-      // we were filling, user released: start countdown
       filling = false;
       counting = true;
       pressStart = 0;
       lastStep = now;
-      // strip content already reflects ledsLit
     } else {
-      // idle: only first and last red, waiting for a hold
       pressStart = 0;
       filling = false;
       ledsLit = 0;
