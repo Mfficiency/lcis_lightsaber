@@ -1,4 +1,9 @@
 // STEP 13: Brightness Control
+//
+// WIRING DIAGRAM
+// XIAO ESP32-C3 D2 -> NeoPixel DIN
+// XIAO ESP32-C3 5V/VBUS -> NeoPixel 5V
+// XIAO ESP32-C3 GND -> NeoPixel GND
 
 #include <Adafruit_NeoPixel.h>
 

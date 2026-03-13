@@ -1,4 +1,8 @@
 // STEP 05: Read a Button
+//
+// WIRING DIAGRAM
+// XIAO ESP32-C3 D0 -> pushbutton -> GND
+// Uses INPUT_PULLUP, so the pin reads LOW when pressed
 
 const int BUTTON_PIN = 0;
 
