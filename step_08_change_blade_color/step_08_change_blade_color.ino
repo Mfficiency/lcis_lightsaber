@@ -1,7 +1,7 @@
 // STEP 08: Change Led Strip Color
 //
 // WIRING DIAGRAM
-// XIAO ESP32-C3 D9 -> NeoPixel DIN
+// XIAO ESP32-C3 D8 -> NeoPixel DIN
 // XIAO ESP32-C3 5V/VBUS -> NeoPixel 5V
 // XIAO ESP32-C3 GND -> NeoPixel GND
 
@@ -12,7 +12,7 @@
 #if USE_SUPER_MINI_PINS
 const int LED_STRIP_PIN = 2;
 #else
-const int LED_STRIP_PIN = D9;
+const int LED_STRIP_PIN = D8;
 #endif
 const int LED_COUNT = 60;
 const int SAFE_BRIGHTNESS = 25;

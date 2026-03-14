@@ -9,7 +9,7 @@ const int BUTTON_PIN = 0;
 const int LED_STRIP_PIN = 2;
 #else
 const int BUTTON_PIN = D7;
-const int LED_STRIP_PIN = D9;
+const int LED_STRIP_PIN = D8;
 #endif
 
 const int LED_COUNT = 60;

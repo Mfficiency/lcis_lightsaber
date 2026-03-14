@@ -12,7 +12,7 @@ const int LED_STRIP_PIN = 2;
 const int GYRO_SCL_PIN = 5;
 const int GYRO_SDA_PIN = 4;
 #else
-const int LED_STRIP_PIN = D9;
+const int LED_STRIP_PIN = D8;
 const int GYRO_SCL_PIN = D0;
 const int GYRO_SDA_PIN = D10;
 #endif

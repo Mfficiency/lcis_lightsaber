@@ -2,7 +2,7 @@
 //
 // WIRING DIAGRAM
 // XIAO ESP32-C3 D7 -> pushbutton -> GND
-// XIAO ESP32-C3 D9 -> NeoPixel DIN
+// XIAO ESP32-C3 D8 -> NeoPixel DIN
 // XIAO ESP32-C3 5V/VBUS -> NeoPixel 5V
 // XIAO ESP32-C3 GND -> NeoPixel GND
 
@@ -15,7 +15,7 @@ const int BUTTON_PIN = 0;
 const int LED_STRIP_PIN = 2;
 #else
 const int BUTTON_PIN = D7;
-const int LED_STRIP_PIN = D9;
+const int LED_STRIP_PIN = D8;
 #endif
 
 const int LED_COUNT = 60;

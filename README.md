@@ -30,8 +30,8 @@ This progression is designed to introduce programming concepts step by step whil
 		- [LED Blade](#led-blade)
 			- [6. Turn On One Pixel of the LED Strip](#6-turn-on-one-pixel-of-the-led-strip)
 			- [7. Turn On the Entire Strip](#7-turn-on-the-entire-strip)
-			- [8. Change Led Strip Color](#8-change-blade-color)
-			- [9. Led Strip On and Off](#9-blade-on-and-off)
+			- [8. Change Led Strip Color](#8-change-led-strip-color)
+			- [9. Led Strip On and Off](#9-led-strip-on-and-off)
 			- [10. Ignition Animation](#10-ignition-animation)
 			- [11. Shutdown Animation](#11-shutdown-animation)
 			- [12. Button Toggles Led Strip On and Off](#12-button-toggles-led-strip-on-and-off)
@@ -43,7 +43,7 @@ This progression is designed to introduce programming concepts step by step whil
 			- [17. Light Flash on Swing](#17-light-flash-on-swing)
 			- [18. Detect Strong Impact](#18-detect-strong-impact)
 			- [19. Clash Flash Effect](#19-clash-flash-effect)
-			- [20. Idle Led Strip Effect](#20-idle-blade-effect)
+			- [20. Idle Led Strip Effect](#20-idle-led-strip-effect)
 		- [Program Structure](#program-structure)
 			- [21. Introduce Program States](#21-introduce-program-states)
 			- [22. Button Toggles Saber Power](#22-button-toggles-saber-power)
@@ -158,7 +158,7 @@ The Seeed Studio XIAO ESP32-C3 does not use a normal built-in user LED for these
 
 For `step_03_blink_with_serial`, use an external LED:
 
-- Connect `D10` to a `220-330 ohm` resistor
+- Connect `D8` to a `220-330 ohm` resistor
 - Connect the resistor to the long leg of the LED
 - Connect the short leg of the LED to `GND`
 
@@ -168,8 +168,8 @@ For `step_03_blink_with_serial`, use an external LED:
 
 These sketches mostly use the same pins so students do not have to relearn the wiring each time.
 
-- Single practice LED for step 3: `D10`
-- LED strip data pin: `D9` on XIAO ESP32-C3, `GPIO2` on ESP32-C3 Super Mini
+- Single practice LED for step 3: `D2`
+- LED strip data pin: `D8` on XIAO ESP32-C3, `GPIO2` on ESP32-C3 Super Mini
 - Button pin: `D7` on XIAO ESP32-C3, `GPIO0` on ESP32-C3 Super Mini
 - Button LED pin: `D2` on XIAO ESP32-C3, `GPIO7` on ESP32-C3 Super Mini
 - Buzzer pin: `D4` on XIAO ESP32-C3, `GPIO10` on ESP32-C3 Super Mini

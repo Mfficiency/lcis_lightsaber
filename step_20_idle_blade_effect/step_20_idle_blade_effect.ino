@@ -7,7 +7,7 @@
 #if USE_SUPER_MINI_PINS
 const int LED_STRIP_PIN = 2;
 #else
-const int LED_STRIP_PIN = D9;
+const int LED_STRIP_PIN = D8;
 #endif
 const int LED_COUNT = 60;
 const int SAFE_BRIGHTNESS = 25;
