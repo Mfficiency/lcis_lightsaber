@@ -16,23 +16,37 @@ const int BUTTON_PIN = D7;
 const int BUTTON_LED_PIN = D2;
 #endif
 
+const unsigned long DEBOUNCE_MS = 200;
+
+bool ledOn = false;
+int lastButtonState = HIGH;
+unsigned long lastPressTime = 0;
+
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(BUTTON_LED_PIN, OUTPUT);
   Serial.begin(115200);
-  Serial.println("Button LED control ready.");
+  digitalWrite(BUTTON_LED_PIN, LOW);
+  Serial.println("Button LED toggle ready. LED OFF");
 }
 
 void loop() {
   int buttonState = digitalRead(BUTTON_PIN);
+  unsigned long now = millis();
 
-  if (buttonState == LOW) {
-    digitalWrite(BUTTON_LED_PIN, HIGH);
-    Serial.println("Button pressed -> LED ON");
-  } else {
-    digitalWrite(BUTTON_LED_PIN, LOW);
-    Serial.println("Button released -> LED OFF");
+  if (buttonState == LOW && lastButtonState == HIGH && now - lastPressTime >= DEBOUNCE_MS) {
+    ledOn = !ledOn;
+    lastPressTime = now;
+
+    if (ledOn) {
+      digitalWrite(BUTTON_LED_PIN, HIGH);
+      Serial.println("Button pressed -> LED ON");
+    } else {
+      digitalWrite(BUTTON_LED_PIN, LOW);
+      Serial.println("Button pressed -> LED OFF");
+    }
   }
 
+  lastButtonState = buttonState;
   delay(20);
 }
