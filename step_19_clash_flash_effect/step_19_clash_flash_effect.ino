@@ -19,7 +19,7 @@ const int GYRO_SDA_PIN = D10;
 
 const int LED_COUNT = 60;
 const int SAFE_BRIGHTNESS = 25;
-const float CLASH_THRESHOLD = 10.0;
+const float CLASH_THRESHOLD = 5.0;
 
 Adafruit_MPU6050 mpu;
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
