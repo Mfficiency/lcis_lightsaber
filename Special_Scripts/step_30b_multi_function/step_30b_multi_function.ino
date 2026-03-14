@@ -1,14 +1,18 @@
-// SPECIAL: Step 30 With Long-Press Mode Cycling
+// SPECIAL: Step 30 Multi-Function
 //
 // Builds on step_30_final_integrated_lightsaber.
 //
 // CONTROLS
 // Short press:
 // - OFF -> startup
+// - ON -> next mode
+//
+// Double press:
 // - ON -> shutdown
 //
-// Long press:
-// - cycle between the 4 modes
+// Count mode:
+// - hold button to count up
+// - release to count down
 //
 // MODES
 // 1. Default lightsaber mode
@@ -43,14 +47,14 @@ const int SHUTDOWN_PEAK_BRIGHTNESS = 60;
 const unsigned long ANIMATION_INTERVAL_MS = 25;
 const unsigned long IDLE_INTERVAL_MS = 60;
 const unsigned long ORIENTATION_UPDATE_MS = 120;
-const unsigned long LONG_PRESS_MS = 900;
 const unsigned long DOUBLE_PRESS_MS = 350;
+const unsigned long COUNT_HOLD_START_MS = 250;
+const unsigned long COUNT_UP_INTERVAL_MS = 500;
+const unsigned long COUNT_DOWN_INTERVAL_MS = 2000;
 const float SWING_THRESHOLD = 4.0;
 const float CLASH_THRESHOLD = 10.0;
 const float GRAVITY_REFERENCE = 9.8;
 const float NIGHTLIGHT_SMOOTHING = 0.18;
-const unsigned long COUNT_UP_INTERVAL_MS = 500;
-const unsigned long COUNT_DOWN_INTERVAL_MS = 2000;
 
 enum SaberState {
   OFF_STATE,
@@ -87,6 +91,7 @@ const int SABER_UP_SIGN = 1;
 
 SaberState currentState = OFF_STATE;
 SaberMode currentMode = DEFAULT_MODE;
+CountModeState countModeState = COUNT_IDLE_STATE;
 
 int bladeRed = 0;
 int bladeGreen = 100;
@@ -95,18 +100,17 @@ int bladeWhite = 100;
 
 int lastButtonState = HIGH;
 int animationIndex = 0;
+int countModeLitCount = 0;
 unsigned long lastAnimationUpdate = 0;
 unsigned long lastIdleUpdate = 0;
 unsigned long lastOrientationUpdate = 0;
+unsigned long lastCountModeUpdate = 0;
 unsigned long buttonPressStart = 0;
-bool longPressHandled = false;
+unsigned long lastReleaseTime = 0;
 bool pendingShortPress = false;
-unsigned long lastShortPressTime = 0;
+bool countHoldActive = false;
 float smoothedNightLightWhite = 5.0;
 float smoothedNightLightLitCount = LED_COUNT;
-CountModeState countModeState = COUNT_IDLE_STATE;
-int countModeLitCount = 0;
-unsigned long lastCountModeUpdate = 0;
 
 Adafruit_MPU6050 mpu;
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
@@ -115,7 +119,6 @@ void handleButton();
 void processPendingShortPress();
 void handleShortPress();
 void handleDoublePress();
-void handleLongPress();
 void cycleMode();
 void showCurrentMode();
 void updateStateMachine();
@@ -137,6 +140,7 @@ void fillBladeColor(int red, int green, int blue, int white);
 void fillCurrentBladeColor();
 void showClashSparkEffect();
 void showNightLightBlade(int whiteValue, int litCount);
+void showCountModeIdle();
 float clamp01(float value);
 float getMappedAxis(float x, float y, float z, AxisName axisName, int axisSign);
 void readOrientation(float& saberRight, float& saberTip, float& saberUp);
@@ -146,8 +150,8 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   Serial.begin(115200);
   Wire.begin(GYRO_SDA_PIN, GYRO_SCL_PIN);
-  Serial.println("Step 30 special mode ready. State -> OFF");
-  Serial.println("Long press cycles modes: default, color choose, nightlight.");
+  Serial.println("Step 30 multi-function ready. State -> OFF");
+  Serial.println("Short press powers on and cycles modes. Double press powers off.");
 
   strip.begin();
   strip.setBrightness(SAFE_BRIGHTNESS);
@@ -161,7 +165,6 @@ void setup() {
     }
   }
 
-  randomSeed(analogRead(0));
   showCurrentMode();
 }
 
@@ -180,7 +183,7 @@ void loop() {
     updateColorChooseMode();
   } else if (currentMode == NIGHTLIGHT_MODE) {
     updateNightLightMode();
-  } else if (currentMode == COUNT_MODE) {
+  } else {
     updateCountMode();
   }
 }
@@ -191,22 +194,34 @@ void handleButton() {
 
   if (buttonState == LOW && lastButtonState == HIGH) {
     buttonPressStart = now;
-    longPressHandled = false;
+    countHoldActive = false;
   }
 
-  if (buttonState == LOW && !longPressHandled && now - buttonPressStart >= LONG_PRESS_MS) {
-    handleLongPress();
-    longPressHandled = true;
+  if (buttonState == LOW && currentState == ON_STATE && currentMode == COUNT_MODE && !countHoldActive) {
+    if (now - buttonPressStart >= COUNT_HOLD_START_MS) {
+      pendingShortPress = false;
+      countHoldActive = true;
+      countModeState = COUNTING_UP_STATE;
+      lastCountModeUpdate = now;
+      Serial.println("Count mode -> counting up");
+    }
   }
 
-  if (buttonState == HIGH && lastButtonState == LOW && !longPressHandled) {
-    if (currentMode == COUNT_MODE && currentState == ON_STATE) {
-      if (pendingShortPress && now - lastShortPressTime <= DOUBLE_PRESS_MS) {
+  if (buttonState == HIGH && lastButtonState == LOW) {
+    if (countHoldActive) {
+      countHoldActive = false;
+      if (currentState == ON_STATE && currentMode == COUNT_MODE) {
+        countModeState = COUNTING_DOWN_STATE;
+        lastCountModeUpdate = now;
+        Serial.println("Count mode -> counting down");
+      }
+    } else if (currentState == ON_STATE) {
+      if (pendingShortPress && now - lastReleaseTime <= DOUBLE_PRESS_MS) {
         pendingShortPress = false;
         handleDoublePress();
       } else {
         pendingShortPress = true;
-        lastShortPressTime = now;
+        lastReleaseTime = now;
       }
     } else {
       handleShortPress();
@@ -221,7 +236,7 @@ void processPendingShortPress() {
     return;
   }
 
-  if (millis() - lastShortPressTime > DOUBLE_PRESS_MS) {
+  if (millis() - lastReleaseTime > DOUBLE_PRESS_MS) {
     pendingShortPress = false;
     handleShortPress();
   }
@@ -233,32 +248,16 @@ void handleShortPress() {
   if (currentState == OFF_STATE) {
     startTurnOn();
   } else if (currentState == ON_STATE) {
-    startTurnOff();
+    cycleMode();
   }
 }
 
 void handleDoublePress() {
   Serial.println("Double press");
 
-  if (currentMode != COUNT_MODE || currentState != ON_STATE) {
-    return;
+  if (currentState == ON_STATE) {
+    startTurnOff();
   }
-
-  if (countModeState == COUNTING_UP_STATE) {
-    countModeState = COUNTING_DOWN_STATE;
-    lastCountModeUpdate = millis();
-    Serial.println("Count mode -> counting down");
-  } else {
-    countModeState = COUNTING_UP_STATE;
-    lastCountModeUpdate = millis();
-    Serial.println("Count mode -> counting up");
-  }
-}
-
-void handleLongPress() {
-  Serial.println("Long press");
-  pendingShortPress = false;
-  cycleMode();
 }
 
 void cycleMode() {
@@ -267,20 +266,22 @@ void cycleMode() {
   showCurrentMode();
   lastIdleUpdate = 0;
   lastOrientationUpdate = 0;
+  smoothedNightLightWhite = 5.0;
+  smoothedNightLightLitCount = LED_COUNT;
+  countModeState = COUNT_IDLE_STATE;
+  countModeLitCount = 0;
+  countHoldActive = false;
 
-  if (currentState == ON_STATE) {
-    if (currentMode == DEFAULT_MODE) {
-      fillCurrentBladeColor();
-      strip.show();
-    } else if (currentMode == NIGHTLIGHT_MODE) {
-      smoothedNightLightWhite = 5.0;
-      smoothedNightLightLitCount = LED_COUNT;
-    } else if (currentMode == COUNT_MODE) {
-      countModeState = COUNT_IDLE_STATE;
-      countModeLitCount = 0;
-      strip.clear();
-      strip.show();
-    }
+  if (currentState != ON_STATE) {
+    return;
+  }
+
+  if (currentMode == DEFAULT_MODE || currentMode == COLOR_CHOOSE_MODE) {
+    fillCurrentBladeColor();
+    strip.show();
+  } else if (currentMode == COUNT_MODE) {
+    showCountModeIdle();
+    strip.show();
   }
 }
 
@@ -292,7 +293,7 @@ void showCurrentMode() {
   } else if (currentMode == NIGHTLIGHT_MODE) {
     Serial.println("Mode -> Nightlight");
   } else {
-    Serial.println("Mode -> Count with double press");
+    Serial.println("Mode -> Count mode");
   }
 }
 
@@ -300,10 +301,11 @@ void startTurnOn() {
   currentState = TURNING_ON_STATE;
   animationIndex = 0;
   lastAnimationUpdate = 0;
+  pendingShortPress = false;
+  countHoldActive = false;
   strip.setBrightness(SAFE_BRIGHTNESS);
   strip.clear();
   strip.show();
-  pendingShortPress = false;
   Serial.println("State -> TURNING_ON");
   playStartupSound();
 }
@@ -313,6 +315,8 @@ void startTurnOff() {
   animationIndex = 0;
   lastAnimationUpdate = 0;
   pendingShortPress = false;
+  countHoldActive = false;
+  countModeState = COUNT_IDLE_STATE;
   Serial.println("State -> TURNING_OFF");
   playShutdownSound();
   pulseBrightness();
@@ -340,11 +344,17 @@ void updateStateMachine() {
       currentState = ON_STATE;
       lastIdleUpdate = 0;
       lastOrientationUpdate = 0;
+      lastCountModeUpdate = 0;
+      countModeLitCount = 0;
+      countModeState = COUNT_IDLE_STATE;
       smoothedNightLightWhite = 5.0;
       smoothedNightLightLitCount = LED_COUNT;
-      countModeState = COUNT_IDLE_STATE;
-      countModeLitCount = 0;
-      lastCountModeUpdate = 0;
+
+      if (currentMode == COUNT_MODE) {
+        showCountModeIdle();
+        strip.show();
+      }
+
       Serial.println("State -> ON");
     }
   }
@@ -454,6 +464,8 @@ void updateCountMode() {
   unsigned long now = millis();
 
   if (countModeState == COUNT_IDLE_STATE) {
+    showCountModeIdle();
+    strip.show();
     return;
   }
 
@@ -475,7 +487,15 @@ void updateCountMode() {
   } else if (countModeState == COUNTING_DOWN_STATE) {
     if (countModeLitCount > 0) {
       countModeLitCount--;
+    } else {
+      countModeState = COUNT_IDLE_STATE;
     }
+  }
+
+  if (countModeState == COUNT_IDLE_STATE && countModeLitCount == 0) {
+    showCountModeIdle();
+    strip.show();
+    return;
   }
 
   strip.clear();
@@ -545,8 +565,11 @@ void playModeCycleSound() {
   } else if (currentMode == COLOR_CHOOSE_MODE) {
     tone(BUZZER_PIN, 900, 55);
     delay(70);
-  } else {
+  } else if (currentMode == NIGHTLIGHT_MODE) {
     tone(BUZZER_PIN, 1100, 55);
+    delay(70);
+  } else {
+    tone(BUZZER_PIN, 1300, 55);
     delay(70);
   }
 }
@@ -611,6 +634,18 @@ void showNightLightBlade(int whiteValue, int litCount) {
 
   for (int i = startIndex; i <= endIndex; i++) {
     strip.setPixelColor(i, strip.Color(0, 0, 0, whiteValue));
+  }
+}
+
+void showCountModeIdle() {
+  strip.clear();
+
+  for (int i = 4; i < LED_COUNT; i += 10) {
+    strip.setPixelColor(i, strip.Color(5, 0, 0, 0));
+  }
+
+  for (int i = 9; i < LED_COUNT; i += 10) {
+    strip.setPixelColor(i, strip.Color(15, 2, 0, 0));
   }
 }
 
