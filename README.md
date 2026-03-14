@@ -35,9 +35,9 @@ This progression is designed to introduce programming concepts step by step whil
 			- [10. Ignition Animation](#10-ignition-animation)
 			- [11. Shutdown Animation](#11-shutdown-animation)
 			- [12. Button Toggles Led Strip On and Off](#12-button-toggles-led-strip-on-and-off)
-			- [13. Brightness Control](#13-brightness-control)
+			- [13. Detect Lightsaber Orientation](#13-detect-lightsaber-orientation)
 		- [Motion and Sensors](#motion-and-sensors)
-			- [14. Read Gyroscope Data](#14-read-gyroscope-data)
+			- [14. Orientation and Acceleration](#14-orientation-and-acceleration)
 			- [15. Detect Movement](#15-detect-movement)
 			- [16. Swing Detection](#16-swing-detection)
 			- [17. Light Flash on Swing](#17-light-flash-on-swing)
@@ -198,7 +198,7 @@ Start at Step 1 and move forward in order:
 - `step_10_ignition_animation`
 - `step_11_shutdown_animation`
 - `step_12_button_toggle_blade`
-- `step_13_brightness_control`
+- `step_13_detect_orientation`
 - `step_14_read_gyroscope`
 - `step_15_detect_movement`
 - `step_16_swing_detection`
@@ -281,17 +281,17 @@ This shows how changing a loop changes behavior.
 
 Use the button to switch the Led Strip fully on or fully off.
 This connects button input to a persistent output state.
-#### 13. Brightness Control
+#### 13. Detect Lightsaber Orientation
 
-Use a variable to change the whole Led Strip brightness.
-This makes the sketch easier to tune.
+Use the MPU6050 accelerometer to estimate which way the lightsaber is pointing.
+This introduces orientation detection before reading full live sensor data.
 
 ### Motion and Sensors
 
-#### 14. Read Gyroscope Data
+#### 14. Orientation and Acceleration
 
-Print the X, Y, and Z gyroscope values.
-Students learn that sensors produce live data.
+Print the acceleration values and the current orientation label.
+Students learn how live sensor numbers map to a simple interpreted state.
 
 #### 15. Detect Movement
 
@@ -431,3 +431,5 @@ If you want to return to the lessons:
 4. Click `Upload`
 
 That upload replaces WLED on the board.
+
+

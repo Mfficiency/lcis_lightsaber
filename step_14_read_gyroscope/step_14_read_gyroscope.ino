@@ -1,4 +1,4 @@
-// STEP 14: Read Gyroscope Data
+// STEP 14: Orientation and Acceleration
 
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
@@ -13,8 +13,11 @@ const int GYRO_SDA_PIN = 4;
 const int GYRO_SCL_PIN = D0;
 const int GYRO_SDA_PIN = D10;
 #endif
+const float ORIENTATION_THRESHOLD = 7.0;
 
 Adafruit_MPU6050 mpu;
+
+void printOrientation(float x, float y, float z);
 
 void setup() {
   Serial.begin(115200);
@@ -26,6 +29,8 @@ void setup() {
       delay(10);
     }
   }
+
+  Serial.println("Orientation and acceleration demo ready.");
 }
 
 void loop() {
@@ -35,12 +40,37 @@ void loop() {
 
   mpu.getEvent(&accelEvent, &gyroEvent, &tempEvent);
 
-  Serial.print("Gyro X: ");
-  Serial.print(gyroEvent.gyro.x);
+  Serial.print("Accel X: ");
+  Serial.print(accelEvent.acceleration.x);
   Serial.print("  Y: ");
-  Serial.print(gyroEvent.gyro.y);
+  Serial.print(accelEvent.acceleration.y);
   Serial.print("  Z: ");
-  Serial.println(gyroEvent.gyro.z);
+  Serial.println(accelEvent.acceleration.z);
 
-  delay(200);
+  printOrientation(
+    accelEvent.acceleration.x,
+    accelEvent.acceleration.y,
+    accelEvent.acceleration.z
+  );
+
+  Serial.println();
+  delay(300);
+}
+
+void printOrientation(float x, float y, float z) {
+  if (z > ORIENTATION_THRESHOLD) {
+    Serial.println("Orientation: flat, face up");
+  } else if (z < -ORIENTATION_THRESHOLD) {
+    Serial.println("Orientation: flat, face down");
+  } else if (x > ORIENTATION_THRESHOLD) {
+    Serial.println("Orientation: tilted right");
+  } else if (x < -ORIENTATION_THRESHOLD) {
+    Serial.println("Orientation: tilted left");
+  } else if (y > ORIENTATION_THRESHOLD) {
+    Serial.println("Orientation: tip down");
+  } else if (y < -ORIENTATION_THRESHOLD) {
+    Serial.println("Orientation: tip up");
+  } else {
+    Serial.println("Orientation: between directions");
+  }
 }
