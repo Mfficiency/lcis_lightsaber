@@ -17,3 +17,4 @@ after on and off animation, link this to a button
 - update timer with wifi
 - look for what to do with bluetooth, sync with music, sync with other sabers
 - test Wled
+- update rainbow mode to have more fun ones
