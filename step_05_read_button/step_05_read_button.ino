@@ -1,10 +1,16 @@
 // STEP 05: Read a Button
 //
 // WIRING DIAGRAM
-// XIAO ESP32-C3 D0 -> pushbutton -> GND
+// XIAO ESP32-C3 D7 -> pushbutton -> GND
 // Uses INPUT_PULLUP, so the pin reads LOW when pressed
 
-const int BUTTON_PIN = D0;
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int BUTTON_PIN = 0;
+#else
+const int BUTTON_PIN = D7;
+#endif
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);

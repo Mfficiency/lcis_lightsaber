@@ -2,14 +2,22 @@
 
 #include <Adafruit_NeoPixel.h>
 
-const int BUTTON_PIN = D0;
-const int BLADE_PIN = D0;
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int BUTTON_PIN = 0;
+const int LED_STRIP_PIN = 2;
+#else
+const int BUTTON_PIN = D7;
+const int LED_STRIP_PIN = D9;
+#endif
+
 const int LED_COUNT = 60;
 
 bool saberOn = false;
 int lastButtonState = HIGH;
 
-Adafruit_NeoPixel strip(LED_COUNT, BLADE_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);

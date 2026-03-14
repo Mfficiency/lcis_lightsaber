@@ -169,11 +169,16 @@ For `step_03_blink_led` and `step_04_blink_with_serial`, use an external LED:
 These sketches mostly use the same pins so students do not have to relearn the wiring each time.
 
 - Single practice LED for step 3 and 4: `D10`
-- LED strip data pin: `D0`
-- Button pin: `D0`
-- Buzzer pin: `D10`
+- LED strip data pin: `D9` on XIAO ESP32-C3, `GPIO2` on ESP32-C3 Super Mini
+- Button pin: `D7` on XIAO ESP32-C3, `GPIO0` on ESP32-C3 Super Mini
+- Button LED pin: `D2` on XIAO ESP32-C3, `GPIO7` on ESP32-C3 Super Mini
+- Buzzer pin: `D4` on XIAO ESP32-C3, `GPIO10` on ESP32-C3 Super Mini
+- Gyroscope SCL pin: `D0` on XIAO ESP32-C3, `GPIO5` on ESP32-C3 Super Mini
+- Gyroscope SDA pin: `D10` on XIAO ESP32-C3, `GPIO4` on ESP32-C3 Super Mini
 
 If your class wiring is different, update the pin numbers at the top of each sketch.
+
+For the ESP32-C3 Super Mini, set `USE_SUPER_MINI_PINS` to `1` near the top of each relevant sketch.
 
 ## The Steps
 

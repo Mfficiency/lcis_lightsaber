@@ -5,9 +5,22 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-const int BUTTON_PIN = D0;
-const int BLADE_PIN = D0;
-const int BUZZER_PIN = D10;
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int BUTTON_PIN = 0;
+const int LED_STRIP_PIN = 2;
+const int BUZZER_PIN = 10;
+const int GYRO_SCL_PIN = 5;
+const int GYRO_SDA_PIN = 4;
+#else
+const int BUTTON_PIN = D7;
+const int LED_STRIP_PIN = D9;
+const int BUZZER_PIN = D4;
+const int GYRO_SCL_PIN = D0;
+const int GYRO_SDA_PIN = D10;
+#endif
+
 const int LED_COUNT = 60;
 const int BLADE_BRIGHTNESS = 80;
 const unsigned long ANIMATION_INTERVAL_MS = 25;
@@ -28,11 +41,12 @@ unsigned long lastAnimationUpdate = 0;
 unsigned long lastIdleUpdate = 0;
 
 Adafruit_MPU6050 mpu;
-Adafruit_NeoPixel strip(LED_COUNT, BLADE_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   Serial.begin(115200);
+  Wire.begin(GYRO_SDA_PIN, GYRO_SCL_PIN);
 
   strip.begin();
   strip.setBrightness(BLADE_BRIGHTNESS);

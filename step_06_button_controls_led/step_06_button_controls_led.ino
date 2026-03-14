@@ -1,25 +1,32 @@
 // STEP 06: Button Controls an LED
 //
 // WIRING DIAGRAM
-// XIAO ESP32-C3 D0 -> pushbutton -> GND
-// XIAO ESP32-C3 D8 -> 220-330 ohm resistor -> LED anode (+)
+// XIAO ESP32-C3 D7 -> pushbutton -> GND
+// XIAO ESP32-C3 D2 -> 220-330 ohm resistor -> LED anode (+)
 // LED cathode (-) -> GND
 // Button uses INPUT_PULLUP, so the pin reads LOW when pressed
 
-const int BUTTON_PIN = D0;
-const int LED_PIN = D8;
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int BUTTON_PIN = 0;
+const int BUTTON_LED_PIN = 7;
+#else
+const int BUTTON_PIN = D7;
+const int BUTTON_LED_PIN = D2;
+#endif
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(BUTTON_LED_PIN, OUTPUT);
 }
 
 void loop() {
   int buttonState = digitalRead(BUTTON_PIN);
 
   if (buttonState == LOW) {
-    digitalWrite(LED_PIN, HIGH);
+    digitalWrite(BUTTON_LED_PIN, HIGH);
   } else {
-    digitalWrite(LED_PIN, LOW);
+    digitalWrite(BUTTON_LED_PIN, LOW);
   }
 }

@@ -1,6 +1,12 @@
 // STEP 26: Buzzer Test
 
-const int BUZZER_PIN = D10;
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int BUZZER_PIN = 10;
+#else
+const int BUZZER_PIN = D4;
+#endif
 
 void setup() {
 }

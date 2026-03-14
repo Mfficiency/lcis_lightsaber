@@ -5,8 +5,20 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-const int BUTTON_PIN = D0;
-const int BLADE_PIN = D0;
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int BUTTON_PIN = 0;
+const int LED_STRIP_PIN = 2;
+const int GYRO_SCL_PIN = 5;
+const int GYRO_SDA_PIN = 4;
+#else
+const int BUTTON_PIN = D7;
+const int LED_STRIP_PIN = D9;
+const int GYRO_SCL_PIN = D0;
+const int GYRO_SDA_PIN = D10;
+#endif
+
 const int LED_COUNT = 60;
 const float SWING_THRESHOLD = 4.0;
 
@@ -14,7 +26,7 @@ bool saberOn = false;
 int lastButtonState = HIGH;
 
 Adafruit_MPU6050 mpu;
-Adafruit_NeoPixel strip(LED_COUNT, BLADE_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   setupButton();
@@ -45,6 +57,7 @@ void setupBlade() {
 
 void setupGyro() {
   Serial.begin(115200);
+  Wire.begin(GYRO_SDA_PIN, GYRO_SCL_PIN);
 
   if (!mpu.begin()) {
     Serial.println("MPU6050 not found. Check wiring.");

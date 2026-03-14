@@ -4,14 +4,26 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-const int LED_PIN = D8;
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int BUTTON_LED_PIN = 7;
+const int GYRO_SCL_PIN = 5;
+const int GYRO_SDA_PIN = 4;
+#else
+const int BUTTON_LED_PIN = D2;
+const int GYRO_SCL_PIN = D0;
+const int GYRO_SDA_PIN = D10;
+#endif
+
 const float SWING_THRESHOLD = 4.0;
 
 Adafruit_MPU6050 mpu;
 
 void setup() {
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(BUTTON_LED_PIN, OUTPUT);
   Serial.begin(115200);
+  Wire.begin(GYRO_SDA_PIN, GYRO_SCL_PIN);
 
   if (!mpu.begin()) {
     Serial.println("MPU6050 not found. Check wiring.");
@@ -32,9 +44,9 @@ void loop() {
 
   if (movement > SWING_THRESHOLD) {
     Serial.println("Swing detected.");
-    digitalWrite(LED_PIN, HIGH);
+    digitalWrite(BUTTON_LED_PIN, HIGH);
     delay(100);
-    digitalWrite(LED_PIN, LOW);
+    digitalWrite(BUTTON_LED_PIN, LOW);
   }
 
   delay(50);

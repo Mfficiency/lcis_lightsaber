@@ -7,14 +7,20 @@
 
 #include <Adafruit_NeoPixel.h>
 
-const int LED_PIN = D0;
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int BUTTON_LED_PIN = 2;
+#else
+const int BUTTON_LED_PIN = D9;
+#endif
 const int LED_COUNT = 60;
 
 int redValue = 255;
 int greenValue = 0;
 int blueValue = 0;
 
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, BUTTON_LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   strip.begin();

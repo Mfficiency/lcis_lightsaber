@@ -8,13 +8,23 @@
 // CONFIG
 // ------------------------------------------------------
 
-#define LED_PIN        D0
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+#define BUTTON_LED_PIN        2
+const int BUTTON_PIN = 0;            // button to GND, use internal pullup
+const int INT_BUTTON_LED_PIN = 7;           // button LED
+const int BUZZER_PIN = 10;           // buzzer for end beep
+
+#else
+#define BUTTON_LED_PIN        D9
+const int BUTTON_PIN = D7;           // button to GND, use internal pullup
+const int INT_BUTTON_LED_PIN = D2;          // button LED
+const int BUZZER_PIN = D4;           // buzzer for end beep
+
+#endif
 #define LED_COUNT      60
 #define LED_BRIGHTNESS 80
-
-const int BUTTON_PIN = D0;           // button to GND, use internal pullup
-const int INT_LED_PIN = D8;          // built in LED
-const int BUZZER_PIN = D10;          // buzzer for end beep
 
 const unsigned long FILL_TIME_MS   = 2000;   // 2 seconds up
 const unsigned long EMPTY_TIME_MS  = 2000;   // 2 seconds down
@@ -25,7 +35,7 @@ const float GYRO_THRESHOLD = 5.0;           // degrees change to log
 // ------------------------------------------------------
 
 // GRBW strip
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, BUTTON_LED_PIN, NEO_GRBW + NEO_KHZ800);
 
 // button state
 int lastButtonState = HIGH;
@@ -75,7 +85,7 @@ void beepEnd();
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(INT_LED_PIN, OUTPUT);
+  pinMode(INT_BUTTON_LED_PIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
 
@@ -207,14 +217,14 @@ void updateStatusLed() {
   unsigned long now = millis();
 
   if (buttonHeld) {
-    digitalWrite(INT_LED_PIN, HIGH);
+    digitalWrite(INT_BUTTON_LED_PIN, HIGH);
     return;
   }
 
   if (now - lastBlink > 150) {
     lastBlink = now;
     blinkState = !blinkState;
-    digitalWrite(INT_LED_PIN, blinkState ? HIGH : LOW);
+    digitalWrite(INT_BUTTON_LED_PIN, blinkState ? HIGH : LOW);
   }
 }
 

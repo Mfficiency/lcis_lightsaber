@@ -4,6 +4,16 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int GYRO_SCL_PIN = 5;
+const int GYRO_SDA_PIN = 4;
+#else
+const int GYRO_SCL_PIN = D0;
+const int GYRO_SDA_PIN = D10;
+#endif
+
 Adafruit_MPU6050 mpu;
 
 const float SWING_THRESHOLD = 4.0;
@@ -11,6 +21,7 @@ const float CLASH_THRESHOLD = 10.0;
 
 void setup() {
   Serial.begin(115200);
+  Wire.begin(GYRO_SDA_PIN, GYRO_SCL_PIN);
 
   if (!mpu.begin()) {
     Serial.println("MPU6050 not found. Check wiring.");

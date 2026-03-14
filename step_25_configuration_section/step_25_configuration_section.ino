@@ -6,8 +6,20 @@
 #include <Wire.h>
 
 // Configuration values students can tune easily.
-const int BUTTON_PIN = D0;
-const int BLADE_PIN = D0;
+#define USE_SUPER_MINI_PINS 0
+
+#if USE_SUPER_MINI_PINS
+const int BUTTON_PIN = 0;
+const int LED_STRIP_PIN = 2;
+const int GYRO_SCL_PIN = 5;
+const int GYRO_SDA_PIN = 4;
+#else
+const int BUTTON_PIN = D7;
+const int LED_STRIP_PIN = D9;
+const int GYRO_SCL_PIN = D0;
+const int GYRO_SDA_PIN = D10;
+#endif
+
 const int LED_COUNT = 60;
 const int BLADE_BRIGHTNESS = 80;
 const float SWING_THRESHOLD = 4.0;
@@ -18,10 +30,12 @@ const int BLADE_BLUE = 180;
 bool saberOn = true;
 
 Adafruit_MPU6050 mpu;
-Adafruit_NeoPixel strip(LED_COUNT, BLADE_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  Wire.begin(GYRO_SDA_PIN, GYRO_SCL_PIN);
   strip.begin();
   strip.setBrightness(BLADE_BRIGHTNESS);
 
