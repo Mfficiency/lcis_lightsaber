@@ -60,6 +60,7 @@ const unsigned long IDLE_INTERVAL_MS = 60;
 const unsigned long ORIENTATION_UPDATE_MS = 120;
 const unsigned long DOUBLE_PRESS_MS = 220;
 const unsigned long COUNT_HOLD_START_MS = 250;
+const unsigned long SPIRIT_LEVEL_HOLD_MS = 400;
 const unsigned long COUNT_UP_INTERVAL_MS = 700;
 const unsigned long COUNT_DOWN_INTERVAL_MS = 1000;
 const unsigned long RAINBOW_UPDATE_MS = 40;
@@ -104,6 +105,12 @@ enum AxisName {
   AXIS_Z
 };
 
+enum SpiritLevelAxisMode {
+  SPIRIT_LEVEL_AXIS_RIGHT,
+  SPIRIT_LEVEL_AXIS_TIP,
+  SPIRIT_LEVEL_AXIS_UP
+};
+
 const AxisName SABER_RIGHT_AXIS = AXIS_Y;
 const AxisName SABER_TIP_AXIS = AXIS_Z;
 const AxisName SABER_UP_AXIS = AXIS_X;
@@ -134,12 +141,14 @@ unsigned long buttonPressStart = 0;
 unsigned long lastReleaseTime = 0;
 bool pendingShortPress = false;
 bool countHoldActive = false;
+bool spiritLevelHoldActive = false;
 float smoothedNightLightWhite = 5.0;
 float smoothedNightLightLitCount = LED_COUNT;
 float rainbowTemperature = 0.5;
 uint16_t rainbowOffset = 0;
 RainbowPaletteMode rainbowPaletteMode = RAINBOW_ALL_COLORS;
 unsigned long lastRainbowSwingTime = 0;
+SpiritLevelAxisMode spiritLevelAxisMode = SPIRIT_LEVEL_AXIS_RIGHT;
 
 Adafruit_MPU6050 mpu;
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
@@ -160,6 +169,7 @@ void updateNightLightMode();
 void updateCountMode();
 void updateRainbowMode();
 void updateSpiritLevelMode();
+void cycleSpiritLevelAxis();
 void handleMotionEffects();
 void swingEffect();
 void clashEffect();
@@ -173,7 +183,7 @@ void fillCurrentBladeColor();
 void showClashSparkEffect();
 void showNightLightBlade(int whiteValue, int litCount);
 void showCountModeIdle();
-void renderCountMode(int whiteLedCount, int minuteIndicatorCount);
+void renderCountMode(int greenLedCount, int whiteLedCount);
 void playCountdownFinishedSound();
 uint32_t colorWheel(byte wheelPos, int whiteOffset);
 void showSpiritLevel(float saberRight);
@@ -241,6 +251,7 @@ void handleButton() {
   if (buttonState == LOW && lastButtonState == HIGH) {
     buttonPressStart = now;
     countHoldActive = false;
+    spiritLevelHoldActive = false;
   }
 
   if (buttonState == LOW && currentState == ON_STATE && currentMode == COUNT_MODE && !countHoldActive) {
@@ -262,6 +273,14 @@ void handleButton() {
     }
   }
 
+  if (buttonState == LOW && currentState == ON_STATE && currentMode == SPIRIT_LEVEL_MODE && !spiritLevelHoldActive) {
+    if (now - buttonPressStart >= SPIRIT_LEVEL_HOLD_MS) {
+      pendingShortPress = false;
+      spiritLevelHoldActive = true;
+      cycleSpiritLevelAxis();
+    }
+  }
+
   if (buttonState == HIGH && lastButtonState == LOW) {
     if (countHoldActive) {
       countHoldActive = false;
@@ -276,6 +295,8 @@ void handleButton() {
           countModeState = COUNT_IDLE_STATE;
         }
       }
+    } else if (spiritLevelHoldActive) {
+      spiritLevelHoldActive = false;
     } else if (currentState == ON_STATE) {
       if (pendingShortPress && now - lastReleaseTime <= DOUBLE_PRESS_MS) {
         pendingShortPress = false;
@@ -582,22 +603,20 @@ void updateCountMode() {
 
   if (countModeState == COUNT_SELECTING_STATE) {
     if (countHoldActive && now - lastCountModeUpdate >= COUNT_UP_INTERVAL_MS) {
-      lastCountModeUpdate = now;
-
-      if (countModeSelectedMinutes < LED_COUNT) {
-        countModeSelectedMinutes++;
-      }
+      unsigned long elapsed = now - lastCountModeUpdate;
+      int selectionSteps = static_cast<int>(elapsed / COUNT_UP_INTERVAL_MS);
+      lastCountModeUpdate += static_cast<unsigned long>(selectionSteps) * COUNT_UP_INTERVAL_MS;
+      countModeSelectedMinutes = min(LED_COUNT, countModeSelectedMinutes + selectionSteps);
     }
 
-    renderCountMode(countModeSelectedMinutes, min(2, countModeSelectedMinutes));
+    renderCountMode(0, countModeSelectedMinutes);
     strip.show();
     return;
   }
 
   if (countModeState == COUNT_RUNNING_STATE) {
-    if (now - lastCountModeUpdate >= COUNT_DOWN_INTERVAL_MS) {
-      lastCountModeUpdate = now;
-
+    while (countModeState == COUNT_RUNNING_STATE && now - lastCountModeUpdate >= COUNT_DOWN_INTERVAL_MS) {
+      lastCountModeUpdate += COUNT_DOWN_INTERVAL_MS;
       if (countModeWhiteLedCount > 0) {
         countModeWhiteLedCount--;
       }
@@ -620,7 +639,7 @@ void updateCountMode() {
       }
     }
 
-    renderCountMode(countModeWhiteLedCount, min(2, countModeMinutesRemaining));
+    renderCountMode(countModeMinutesRemaining, countModeWhiteLedCount);
     strip.show();
   }
 }
@@ -672,8 +691,27 @@ void updateSpiritLevelMode() {
   float saberUp = 0.0;
   readOrientation(saberRight, saberTip, saberUp);
 
-  showSpiritLevel(saberRight);
+  float spiritLevelValue = saberRight;
+  if (spiritLevelAxisMode == SPIRIT_LEVEL_AXIS_TIP) {
+    spiritLevelValue = saberTip;
+  } else if (spiritLevelAxisMode == SPIRIT_LEVEL_AXIS_UP) {
+    spiritLevelValue = saberUp;
+  }
+
+  showSpiritLevel(spiritLevelValue);
   strip.show();
+}
+
+void cycleSpiritLevelAxis() {
+  spiritLevelAxisMode = static_cast<SpiritLevelAxisMode>((spiritLevelAxisMode + 1) % 3);
+
+  if (spiritLevelAxisMode == SPIRIT_LEVEL_AXIS_RIGHT) {
+    Serial.println("Spirit level axis -> right");
+  } else if (spiritLevelAxisMode == SPIRIT_LEVEL_AXIS_TIP) {
+    Serial.println("Spirit level axis -> tip");
+  } else {
+    Serial.println("Spirit level axis -> up");
+  }
 }
 
 void handleMotionEffects() {
@@ -820,8 +858,19 @@ void showCountModeIdle() {
   }
 }
 
-void renderCountMode(int whiteLedCount, int minuteIndicatorCount) {
+void renderCountMode(int greenLedCount, int whiteLedCount) {
   showCountModeIdle();
+
+  for (int i = 0; i < greenLedCount && i < LED_COUNT; i++) {
+    int redValue = 0;
+    int greenValue = 0;
+    int blueValue = 0;
+    int whiteValue = 0;
+
+    getCountModeBaseColor(i, redValue, greenValue, blueValue, whiteValue);
+    greenValue = min(255, greenValue + 90);
+    strip.setPixelColor(i, strip.Color(redValue, greenValue, blueValue, whiteValue));
+  }
 
   for (int i = 0; i < whiteLedCount && i < LED_COUNT; i++) {
     int redValue = 0;
@@ -830,28 +879,11 @@ void renderCountMode(int whiteLedCount, int minuteIndicatorCount) {
     int whiteValue = 0;
 
     getCountModeBaseColor(i, redValue, greenValue, blueValue, whiteValue);
-    whiteValue = min(255, whiteValue + 5);
+    if (i < greenLedCount) {
+      greenValue = min(255, greenValue + 90);
+    }
+    whiteValue = min(255, whiteValue + 45);
     strip.setPixelColor(i, strip.Color(redValue, greenValue, blueValue, whiteValue));
-  }
-
-  if (minuteIndicatorCount >= 1) {
-    int redValue = 0;
-    int greenValue = 0;
-    int blueValue = 0;
-    int whiteValue = 0;
-    getCountModeBaseColor(0, redValue, greenValue, blueValue, whiteValue);
-    whiteValue = min(255, whiteValue + 40);
-    strip.setPixelColor(0, strip.Color(redValue, greenValue, blueValue, whiteValue));
-  }
-
-  if (minuteIndicatorCount >= 2) {
-    int redValue = 0;
-    int greenValue = 0;
-    int blueValue = 0;
-    int whiteValue = 0;
-    getCountModeBaseColor(1, redValue, greenValue, blueValue, whiteValue);
-    whiteValue = min(255, whiteValue + 40);
-    strip.setPixelColor(1, strip.Color(redValue, greenValue, blueValue, whiteValue));
   }
 }
 
