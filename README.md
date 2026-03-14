@@ -35,7 +35,8 @@ This progression is designed to introduce programming concepts step by step whil
 			- [10. Ignition Animation](#10-ignition-animation)
 			- [11. Shutdown Animation](#11-shutdown-animation)
 			- [12. Button Toggles Led Strip On and Off](#12-button-toggles-led-strip-on-and-off)
-			- [13. Detect Lightsaber Orientation](#13-detect-lightsaber-orientation)
+			- [13A. Print Raw Acceleration Data](#13a-print-raw-acceleration-data)
+			- [13B. Detect Lightsaber Orientation](#13b-detect-lightsaber-orientation)
 		- [Motion and Sensors](#motion-and-sensors)
 			- [14. Orientation and Acceleration](#14-orientation-and-acceleration)
 			- [15. Detect Movement](#15-detect-movement)
@@ -198,7 +199,8 @@ Start at Step 1 and move forward in order:
 - `step_10_ignition_animation`
 - `step_11_shutdown_animation`
 - `step_12_button_toggle_blade`
-- `step_13_detect_orientation`
+- `step_13a_raw_acceleration`
+- `step_13b_detect_orientation`
 - `step_14_read_gyroscope`
 - `step_15_detect_movement`
 - `step_16_swing_detection`
@@ -281,10 +283,15 @@ This shows how changing a loop changes behavior.
 
 Use the button to switch the Led Strip fully on or fully off.
 This connects button input to a persistent output state.
-#### 13. Detect Lightsaber Orientation
+#### 13A. Print Raw Acceleration Data
+
+Print the raw X, Y, and Z acceleration values from the MPU6050.
+This helps students see the sensor data before interpreting it.
+
+#### 13B. Detect Lightsaber Orientation
 
 Use the MPU6050 accelerometer to estimate which way the lightsaber is pointing.
-This introduces orientation detection before reading full live sensor data.
+This builds on the raw values by mapping them to simple orientation labels.
 
 ### Motion and Sensors
 

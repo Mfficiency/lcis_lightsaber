@@ -1,4 +1,4 @@
-// STEP 13: Detect Lightsaber Orientation
+// STEP 13B: Detect Lightsaber Orientation
 //
 // WIRING DIAGRAM
 // XIAO ESP32-C3 D0  -> MPU6050 SCL
@@ -7,7 +7,7 @@
 // XIAO ESP32-C3 GND -> MPU6050 GND
 //
 // This sketch uses the accelerometer to estimate which way the saber is pointing.
-// Hold the saber still for the clearest readings.
+// Update the axis mapping below if the MPU6050 is mounted in a different orientation.
 
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
@@ -33,8 +33,8 @@ const float ORIENTATION_THRESHOLD = 7.0;
 const AxisName SABER_RIGHT_AXIS = AXIS_Y;
 const AxisName SABER_TIP_AXIS = AXIS_Z;
 const AxisName SABER_UP_AXIS = AXIS_X;
-const int SABER_RIGHT_SIGN = 1;
-const int SABER_TIP_SIGN = 1;
+const int SABER_RIGHT_SIGN = -1;
+const int SABER_TIP_SIGN = -1;
 const int SABER_UP_SIGN = 1;
 
 Adafruit_MPU6050 mpu;

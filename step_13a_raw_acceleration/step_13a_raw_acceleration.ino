@@ -1,4 +1,13 @@
-// STEP 14: Orientation and Acceleration
+// STEP 13A: Print Raw Acceleration Data
+//
+// WIRING DIAGRAM
+// XIAO ESP32-C3 D0  -> MPU6050 SCL
+// XIAO ESP32-C3 D10 -> MPU6050 SDA
+// XIAO ESP32-C3 3V3 -> MPU6050 VCC
+// XIAO ESP32-C3 GND -> MPU6050 GND
+//
+// This sketch prints the raw accelerometer values from the MPU6050.
+// Hold the saber still and move it slowly to see how the numbers change.
 
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
@@ -13,11 +22,10 @@ const int GYRO_SDA_PIN = 4;
 const int GYRO_SCL_PIN = D0;
 const int GYRO_SDA_PIN = D10;
 #endif
-const float ORIENTATION_THRESHOLD = 7.0;
 
 Adafruit_MPU6050 mpu;
 
-void printOrientation(float x, float y, float z);
+void printRawAcceleration(float x, float y, float z);
 
 void setup() {
   Serial.begin(115200);
@@ -30,7 +38,7 @@ void setup() {
     }
   }
 
-  Serial.println("Orientation and acceleration demo ready.");
+  Serial.println("Raw acceleration demo ready.");
 }
 
 void loop() {
@@ -40,15 +48,12 @@ void loop() {
 
   mpu.getEvent(&accelEvent, &gyroEvent, &tempEvent);
 
-  Serial.print("Gyro X: ");
-  Serial.print(gyroEvent.gyro.x);
+  Serial.print("Raw accel X: ");
+  Serial.print(accelEvent.acceleration.x);
   Serial.print("  Y: ");
-  Serial.print(gyroEvent.gyro.y);
+  Serial.print(accelEvent.acceleration.y);
   Serial.print("  Z: ");
-  Serial.println(gyroEvent.gyro.z);
-
+  
   Serial.println();
   delay(300);
 }
-
-
