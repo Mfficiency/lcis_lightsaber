@@ -24,6 +24,8 @@ const int BLADE_WHITE = 100;
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
 
+void pulseBrightness();
+
 void setup() {
   Serial.begin(115200);
   strip.begin();
@@ -53,17 +55,7 @@ void igniteBlade() {
 }
 
 void shutdownBlade() {
-  for (int brightness = SAFE_BRIGHTNESS; brightness <= SHUTDOWN_PEAK_BRIGHTNESS; brightness += 5) {
-    strip.setBrightness(brightness);
-    strip.show();
-    delay(15);
-  }
-
-  for (int brightness = SHUTDOWN_PEAK_BRIGHTNESS; brightness >= SAFE_BRIGHTNESS; brightness -= 5) {
-    strip.setBrightness(brightness);
-    strip.show();
-    delay(35);
-  }
+  pulseBrightness();
 
   int leftIndex = (LED_COUNT - 1) / 2;
   int rightIndex = LED_COUNT / 2;
@@ -89,3 +81,16 @@ void shutdownBlade() {
   strip.show();
 }
 
+void pulseBrightness() {
+  for (int brightness = SAFE_BRIGHTNESS; brightness <= SHUTDOWN_PEAK_BRIGHTNESS; brightness += 5) {
+    strip.setBrightness(brightness);
+    strip.show();
+    delay(15);
+  }
+
+  for (int brightness = SHUTDOWN_PEAK_BRIGHTNESS; brightness >= SAFE_BRIGHTNESS; brightness -= 5) {
+    strip.setBrightness(brightness);
+    strip.show();
+    delay(35);
+  }
+}

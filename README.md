@@ -35,9 +35,11 @@ This progression is designed to introduce programming concepts step by step whil
 			- [10. Ignition Animation](#10-ignition-animation)
 			- [11. Shutdown Animation](#11-shutdown-animation)
 			- [12. Button Toggles Led Strip On and Off](#12-button-toggles-led-strip-on-and-off)
-			- [13. Brightness Control](#13-brightness-control)
 		- [Motion and Sensors](#motion-and-sensors)
-			- [14. Read Gyroscope Data](#14-read-gyroscope-data)
+			- [13. Print Raw Acceleration Data](#13-print-raw-acceleration-data)
+			- [13B. Orientation Calibration](#13b-orientation-calibration)
+			- [14. Orientation and Acceleration](#14-orientation-and-acceleration)
+			- [14B. Movement Calibration](#14b-movement-calibration)
 			- [15. Detect Movement](#15-detect-movement)
 			- [16. Swing Detection](#16-swing-detection)
 			- [17. Light Flash on Swing](#17-light-flash-on-swing)
@@ -57,6 +59,8 @@ This progression is designed to introduce programming concepts step by step whil
 			- [29. Clash Sound](#29-clash-sound)
 			- [30. Final Integrated Lightsaber](#30-final-integrated-lightsaber)
 	- [Extra's](#extras)
+		- [special\_scripts](#special_scripts)
+			- [Step 30B](#step-30b)
 		- [WLED](#wled)
 			- [What WLED is good for](#what-wled-is-good-for)
 			- [Important note for the XIAO ESP32-C3](#important-note-for-the-xiao-esp32-c3)
@@ -172,7 +176,7 @@ These sketches mostly use the same pins so students do not have to relearn the w
 - LED strip data pin: `D8` on XIAO ESP32-C3, `GPIO2` on ESP32-C3 Super Mini
 - Button pin: `D7` on XIAO ESP32-C3, `GPIO0` on ESP32-C3 Super Mini
 - Button LED pin: `D2` on XIAO ESP32-C3, `GPIO7` on ESP32-C3 Super Mini
-- Buzzer pin: `D4` on XIAO ESP32-C3, `GPIO10` on ESP32-C3 Super Mini
+- Buzzer pin: `D5` on XIAO ESP32-C3, `GPIO10` on ESP32-C3 Super Mini
 - Gyroscope SCL pin: `D0` on XIAO ESP32-C3, `GPIO5` on ESP32-C3 Super Mini
 - Gyroscope SDA pin: `D10` on XIAO ESP32-C3, `GPIO4` on ESP32-C3 Super Mini
 
@@ -198,8 +202,10 @@ Start at Step 1 and move forward in order:
 - `step_10_ignition_animation`
 - `step_11_shutdown_animation`
 - `step_12_button_toggle_blade`
-- `step_13_brightness_control`
+- `step_13a_raw_acceleration`
+- `Special_Scripts/step_13b_orientation_calibration/step_13b_orientation_calibration.ino`
 - `step_14_read_gyroscope`
+- `Special_Scripts/step_14b_movement_calibration/step_14b_movement_calibration.ino`
 - `step_15_detect_movement`
 - `step_16_swing_detection`
 - `step_17_light_flash_on_swing`
@@ -281,17 +287,28 @@ This shows how changing a loop changes behavior.
 
 Use the button to switch the Led Strip fully on or fully off.
 This connects button input to a persistent output state.
-#### 13. Brightness Control
-
-Use a variable to change the whole Led Strip brightness.
-This makes the sketch easier to tune.
 
 ### Motion and Sensors
 
-#### 14. Read Gyroscope Data
+#### 13. Print Raw Acceleration Data
 
-Print the X, Y, and Z gyroscope values.
-Students learn that sensors produce live data.
+Print the raw X, Y, and Z acceleration values from the MPU6050.
+This helps students see the sensor data before interpreting it.
+
+#### 13B. Orientation Calibration
+
+Use the MPU6050 accelerometer to estimate which way the lightsaber is pointing.
+This builds on the raw values by mapping them to simple orientation labels.
+
+#### 14. Orientation and Acceleration
+
+Print the acceleration values and the current orientation label.
+Students learn how live sensor numbers map to a simple interpreted state.
+
+#### 14B. Movement Calibration
+
+Print the raw gyroscope values and show a simple interpreted rotation state.
+This introduces that gyroscope data measures rotational speed and direction.
 
 #### 15. Detect Movement
 
@@ -367,6 +384,33 @@ Combine button control, Led Strip animation, motion detection, and sound into on
 
 ## Extra's
 
+### special_scripts
+
+The `special_scripts` folder contains helper sketches that are useful for setup, troubleshooting, and calibration.
+They are not part of the main step-by-step lesson flow, but they help you test hardware or tune sensor behavior before continuing with the normal lessons.
+
+- `basic_power_up`: a simple combined demo with button, LED strip, buzzer, and optional orientation behavior
+- `special_find_led_strip_pin`: tests candidate output pins one by one so you can find which pin is connected to the LED strip data line
+- `special_read_button_all_pins`: reads all candidate button pins and prints which one goes `PRESSED` when the button is wired to ground
+- `step_13b_orientation_calibration`: prints accelerometer values and interpreted saber orientation so you can adjust the MPU6050 axis mapping
+- `step_13c_orientation_colors`: changes blade colors based on orientation to visually confirm the orientation mapping is correct
+- `step_14b_movement_calibration`: prints gyroscope rotation values so you can check movement directions and tune rotation thresholds
+
+Use these sketches when something in the hardware setup is unclear, or when the MPU6050 orientation does not match the expected lesson wiring.
+
+#### Step 30B
+
+Here there are different modes added.
+// MODES
+1. Default lightsaber mode
+2. Color choose mode using orientation
+3. Nightlight mode using orientation
+4. Count mode
+5. Rainbow mode
+6. Spirit level mode
+7. OFF mode (all LEDs off, but still responds to motion and button)
+
+
 ### WLED
 
 WLED is a ready-made LED controller firmware for ESP boards.
@@ -431,3 +475,6 @@ If you want to return to the lessons:
 4. Click `Upload`
 
 That upload replaces WLED on the board.
+
+
+

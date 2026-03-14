@@ -16,8 +16,8 @@ const int GYRO_SDA_PIN = D10;
 
 Adafruit_MPU6050 mpu;
 
-const float SWING_THRESHOLD = 4.0;
-const float CLASH_THRESHOLD = 10.0;
+const float SWING_THRESHOLD = 2.0;
+const float CLASH_THRESHOLD = 5.0;
 
 void setup() {
   Serial.begin(115200);
