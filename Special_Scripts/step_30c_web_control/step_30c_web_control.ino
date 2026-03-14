@@ -1,4 +1,4 @@
-// SPECIAL: Step 30 Multi-Function
+// SPECIAL: Step 30C Web Control
 //
 // Builds on step_30_final_integrated_lightsaber.
 //
@@ -14,6 +14,11 @@
 // - hold button to choose minutes
 // - release to start the timer
 //
+// Web controls:
+// - connect to the "Lightsaber-Control" Wi-Fi network
+// - open 192.168.4.1 in a browser
+// - choose power, mode, master brightness, and master hue
+//
 // MODES
 // 1. Default lightsaber mode
 // 2. Color choose mode using orientation
@@ -28,6 +33,9 @@
 #include <Adafruit_NeoPixel.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+#include <DNSServer.h>
+#include <WiFi.h>
+#include <WebServer.h>
 
 #define USE_SUPER_MINI_PINS 0
 
@@ -67,6 +75,9 @@ const float SWING_THRESHOLD = 4.0;
 const float CLASH_THRESHOLD = 10.0;
 const float GRAVITY_REFERENCE = 9.8;
 const float NIGHTLIGHT_SMOOTHING = 0.18;
+const byte DNS_PORT = 53;
+const char* ACCESS_POINT_SSID = "Lightsaber-Control";
+const char* ACCESS_POINT_PASSWORD = "lightsaber";
 
 enum SaberState {
   OFF_STATE,
@@ -119,6 +130,8 @@ int bladeRed = 0;
 int bladeGreen = 100;
 int bladeBlue = 0;
 int bladeWhite = 100;
+int masterBrightnessPercent = 100;
+int masterHueDegrees = 0;
 
 int lastButtonState = HIGH;
 int animationIndex = 0;
@@ -143,12 +156,15 @@ unsigned long lastRainbowSwingTime = 0;
 
 Adafruit_MPU6050 mpu;
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
+DNSServer dnsServer;
+WebServer server(80);
 
 void handleButton();
 void processPendingShortPress();
 void handleShortPress();
 void handleDoublePress();
 void cycleMode();
+void setMode(SaberMode newMode, bool playSoundEnabled);
 void showCurrentMode();
 void applyModeBrightness();
 void updateStateMachine();
@@ -184,12 +200,24 @@ float clamp01(float value);
 float getMappedAxis(float x, float y, float z, AxisName axisName, int axisSign);
 void readOrientation(float& saberRight, float& saberTip, float& saberUp);
 void applyColorFromOrientation(float saberRight, float saberTip, float saberUp);
+void setupWebServer();
+void handleWebRoot();
+void handleWebControl();
+void handleWebStatus();
+void handleCaptivePortalRedirect();
+void refreshModeOutput();
+int getModeBaseBrightness();
+uint32_t makeBladeColor(int red, int green, int blue, int white);
+void applyMasterHueShift(int& red, int& green, int& blue);
+void hueToRgb(float hueDegrees, int& red, int& green, int& blue);
+const char* getModeName(SaberMode mode);
+const char* getStateName(SaberState state);
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   Serial.begin(115200);
   Wire.begin(GYRO_SDA_PIN, GYRO_SCL_PIN);
-  Serial.println("Step 30 multi-function ready. State -> OFF");
+  Serial.println("Step 30c web control ready. State -> OFF");
   Serial.println("Short press powers on and cycles modes. Double press powers off.");
 
   strip.begin();
@@ -204,10 +232,13 @@ void setup() {
     }
   }
 
+  setupWebServer();
   showCurrentMode();
 }
 
 void loop() {
+  dnsServer.processNextRequest();
+  server.handleClient();
   handleButton();
   processPendingShortPress();
   updateStateMachine();
@@ -316,8 +347,16 @@ void handleDoublePress() {
 }
 
 void cycleMode() {
-  currentMode = static_cast<SaberMode>((currentMode + 1) % 7);
-  playModeCycleSound();
+  setMode(static_cast<SaberMode>((currentMode + 1) % 7), true);
+}
+
+void setMode(SaberMode newMode, bool playSoundEnabled) {
+  currentMode = newMode;
+
+  if (playSoundEnabled) {
+    playModeCycleSound();
+  }
+
   showCurrentMode();
   applyModeBrightness();
   lastIdleUpdate = 0;
@@ -331,21 +370,7 @@ void cycleMode() {
   countModeWhiteLedCount = 0;
   countHoldActive = false;
   lastRainbowSwingTime = 0;
-
-  if (currentState != ON_STATE) {
-    return;
-  }
-
-  if (currentMode == DEFAULT_MODE || currentMode == COLOR_CHOOSE_MODE) {
-    fillCurrentBladeColor();
-    strip.show();
-  } else if (currentMode == COUNT_MODE) {
-    showCountModeIdle();
-    strip.show();
-  } else if (currentMode == OFF_MODE) {
-    strip.clear();
-    strip.show();
-  }
+  refreshModeOutput();
 }
 
 void showCurrentMode() {
@@ -367,21 +392,8 @@ void showCurrentMode() {
 }
 
 void applyModeBrightness() {
-  if (currentMode == DEFAULT_MODE) {
-    strip.setBrightness(SABER_BRIGHTNESS);
-  } else if (currentMode == COLOR_CHOOSE_MODE) {
-    strip.setBrightness(COLOR_CHOOSE_BRIGHTNESS);
-  } else if (currentMode == NIGHTLIGHT_MODE) {
-    strip.setBrightness(NIGHTLIGHT_BRIGHTNESS);
-  } else if (currentMode == COUNT_MODE) {
-    strip.setBrightness(COUNT_MODE_BRIGHTNESS);
-  } else if (currentMode == RAINBOW_MODE) {
-    strip.setBrightness(RAINBOW_BRIGHTNESS);
-  } else if (currentMode == SPIRIT_LEVEL_MODE) {
-    strip.setBrightness(SPIRIT_LEVEL_BRIGHTNESS);
-  } else {
-    strip.setBrightness(OFF_MODE_BRIGHTNESS);
-  }
+  int adjustedBrightness = (getModeBaseBrightness() * masterBrightnessPercent) / 100;
+  strip.setBrightness(constrain(adjustedBrightness, 0, 255));
 }
 
 void startTurnOn() {
@@ -420,10 +432,10 @@ void updateStateMachine() {
     int rightIndex = LED_COUNT - 1 - animationIndex;
 
     lastAnimationUpdate = now;
-    strip.setPixelColor(leftIndex, strip.Color(bladeRed, bladeGreen, bladeBlue, bladeWhite));
+    strip.setPixelColor(leftIndex, makeBladeColor(bladeRed, bladeGreen, bladeBlue, bladeWhite));
 
     if (rightIndex != leftIndex) {
-      strip.setPixelColor(rightIndex, strip.Color(bladeRed, bladeGreen, bladeBlue, bladeWhite));
+      strip.setPixelColor(rightIndex, makeBladeColor(bladeRed, bladeGreen, bladeBlue, bladeWhite));
     }
 
     strip.show();
@@ -770,7 +782,7 @@ void pulseBrightness() {
 
 void fillBladeColor(int red, int green, int blue, int white) {
   for (int i = 0; i < LED_COUNT; i++) {
-    strip.setPixelColor(i, strip.Color(red, green, blue, white));
+    strip.setPixelColor(i, makeBladeColor(red, green, blue, white));
   }
 }
 
@@ -785,7 +797,7 @@ void showClashSparkEffect() {
     int sparkIndex = random(LED_COUNT);
     int redValue = random(180, 256);
     int whiteValue = random(120, 256);
-    strip.setPixelColor(sparkIndex, strip.Color(redValue, 30, 0, whiteValue));
+    strip.setPixelColor(sparkIndex, makeBladeColor(redValue, 30, 0, whiteValue));
   }
 
   strip.show();
@@ -798,7 +810,7 @@ void showNightLightBlade(int whiteValue, int litCount) {
   int endIndex = startIndex + litCount - 1;
 
   for (int i = startIndex; i <= endIndex; i++) {
-    strip.setPixelColor(i, strip.Color(0, 0, 0, whiteValue));
+    strip.setPixelColor(i, makeBladeColor(0, 0, 0, whiteValue));
   }
 }
 
@@ -806,11 +818,11 @@ void showCountModeIdle() {
   strip.clear();
 
   for (int i = 4; i < LED_COUNT; i += 10) {
-    strip.setPixelColor(i, strip.Color(5, 0, 0, 0));
+    strip.setPixelColor(i, makeBladeColor(5, 0, 0, 0));
   }
 
   for (int i = 9; i < LED_COUNT; i += 10) {
-    strip.setPixelColor(i, strip.Color(15, 2, 0, 0));
+    strip.setPixelColor(i, makeBladeColor(15, 2, 0, 0));
   }
 }
 
@@ -825,7 +837,7 @@ void renderCountMode(int whiteLedCount, int minuteIndicatorCount) {
 
     getCountModeBaseColor(i, redValue, greenValue, blueValue, whiteValue);
     whiteValue = min(255, whiteValue + 5);
-    strip.setPixelColor(i, strip.Color(redValue, greenValue, blueValue, whiteValue));
+    strip.setPixelColor(i, makeBladeColor(redValue, greenValue, blueValue, whiteValue));
   }
 
   if (minuteIndicatorCount >= 1) {
@@ -835,7 +847,7 @@ void renderCountMode(int whiteLedCount, int minuteIndicatorCount) {
     int whiteValue = 0;
     getCountModeBaseColor(0, redValue, greenValue, blueValue, whiteValue);
     greenValue = min(255, greenValue + 40);
-    strip.setPixelColor(0, strip.Color(redValue, greenValue, blueValue, whiteValue));
+    strip.setPixelColor(0, makeBladeColor(redValue, greenValue, blueValue, whiteValue));
   }
 
   if (minuteIndicatorCount >= 2) {
@@ -845,7 +857,7 @@ void renderCountMode(int whiteLedCount, int minuteIndicatorCount) {
     int whiteValue = 0;
     getCountModeBaseColor(1, redValue, greenValue, blueValue, whiteValue);
     greenValue = min(255, greenValue + 40);
-    strip.setPixelColor(1, strip.Color(redValue, greenValue, blueValue, whiteValue));
+    strip.setPixelColor(1, makeBladeColor(redValue, greenValue, blueValue, whiteValue));
   }
 }
 
@@ -881,7 +893,7 @@ uint32_t colorWheel(byte wheelPos, int whiteOffset) {
   }
 
   int whiteValue = constrain(whiteOffset, 0, 180);
-  return strip.Color(redValue, greenValue, blueValue, whiteValue);
+  return makeBladeColor(redValue, greenValue, blueValue, whiteValue);
 }
 
 void showSpiritLevel(float saberRight) {
@@ -893,10 +905,10 @@ void showSpiritLevel(float saberRight) {
   int rightInner = 44 - static_cast<int>(14.0 * normalizedTilt + 0.5);
   int rightOuter = 44 + static_cast<int>(15.0 * normalizedTilt + 0.5);
 
-  strip.setPixelColor(leftOuter, strip.Color(0, 120, 0, 0));
-  strip.setPixelColor(leftInner, strip.Color(0, 120, 0, 0));
-  strip.setPixelColor(rightInner, strip.Color(0, 120, 0, 0));
-  strip.setPixelColor(rightOuter, strip.Color(0, 120, 0, 0));
+  strip.setPixelColor(leftOuter, makeBladeColor(0, 120, 0, 0));
+  strip.setPixelColor(leftInner, makeBladeColor(0, 120, 0, 0));
+  strip.setPixelColor(rightInner, makeBladeColor(0, 120, 0, 0));
+  strip.setPixelColor(rightOuter, makeBladeColor(0, 120, 0, 0));
 }
 
 void cycleRainbowPalette() {
@@ -1021,4 +1033,383 @@ void applyColorFromOrientation(float saberRight, float saberTip, float saberUp) 
     bladeGreen = 40;
     bladeWhite = 40;
   }
+}
+
+void setupWebServer() {
+  WiFi.mode(WIFI_AP);
+  bool apStarted = WiFi.softAP(ACCESS_POINT_SSID, ACCESS_POINT_PASSWORD);
+
+  if (apStarted) {
+    dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+    Serial.print("Web control AP ready: ");
+    Serial.println(ACCESS_POINT_SSID);
+    Serial.print("Open http://");
+    Serial.println(WiFi.softAPIP());
+    Serial.println("Captive portal redirect enabled.");
+  } else {
+    Serial.println("WARNING: failed to start Wi-Fi access point.");
+  }
+
+  server.on("/", HTTP_GET, handleWebRoot);
+  server.on("/control", HTTP_GET, handleWebControl);
+  server.on("/status", HTTP_GET, handleWebStatus);
+  server.on("/generate_204", HTTP_GET, handleCaptivePortalRedirect);
+  server.on("/gen_204", HTTP_GET, handleCaptivePortalRedirect);
+  server.on("/hotspot-detect.html", HTTP_GET, handleCaptivePortalRedirect);
+  server.on("/canonical.html", HTTP_GET, handleCaptivePortalRedirect);
+  server.on("/ncsi.txt", HTTP_GET, handleCaptivePortalRedirect);
+  server.on("/connecttest.txt", HTTP_GET, handleCaptivePortalRedirect);
+  server.on("/fwlink", HTTP_GET, handleCaptivePortalRedirect);
+  server.on("/redirect", HTTP_GET, handleCaptivePortalRedirect);
+  server.onNotFound(handleCaptivePortalRedirect);
+  server.begin();
+}
+
+void handleWebRoot() {
+  String html = R"HTML(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lightsaber Control</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: Arial, sans-serif; background: #101820; color: #f2f5f7; margin: 0; padding: 20px; }
+    .panel { max-width: 720px; margin: 0 auto; background: #182430; border-radius: 16px; padding: 20px; box-shadow: 0 12px 40px rgba(0,0,0,.28); }
+    h1 { margin-top: 0; }
+    .buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 16px 0; }
+    button { border: 0; border-radius: 999px; padding: 12px 14px; font-size: 15px; cursor: pointer; background: #2a82da; color: white; }
+    button.alt { background: #384656; }
+    label { display: block; margin-top: 18px; font-weight: bold; }
+    input[type=range] { width: 100%; }
+    .status { margin-top: 14px; padding: 12px; background: #0d141b; border-radius: 12px; }
+    .value { font-weight: normal; color: #8fd3ff; }
+    .small { color: #9fb2c3; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>Lightsaber Control</h1>
+    <div class="small">Connect to the board Wi-Fi and use this page to control power, mode, brightness, and hue.</div>
+    <div class="buttons">
+      <button onclick="sendControl('state=on')">Power On</button>
+      <button class="alt" onclick="sendControl('state=off')">Power Off</button>
+    </div>
+    <div class="buttons">
+      <button onclick="sendControl('mode=0')">Default</button>
+      <button onclick="sendControl('mode=1')">Color</button>
+      <button onclick="sendControl('mode=2')">Nightlight</button>
+      <button onclick="sendControl('mode=3')">Count</button>
+      <button onclick="sendControl('mode=4')">Rainbow</button>
+      <button onclick="sendControl('mode=5')">Level</button>
+      <button class="alt" onclick="sendControl('mode=6')">LED Off</button>
+    </div>
+    <label for="brightness">Master Brightness <span id="brightnessValue" class="value"></span></label>
+    <input id="brightness" type="range" min="0" max="100" value="100" oninput="document.getElementById('brightnessValue').textContent=this.value + '%'">
+    <button class="alt" onclick="sendSlider('brightness', document.getElementById('brightness').value)">Apply Brightness</button>
+    <label for="hue">Master Hue <span id="hueValue" class="value"></span></label>
+    <input id="hue" type="range" min="0" max="359" value="0" oninput="document.getElementById('hueValue').textContent=this.value + ' deg'">
+    <button class="alt" onclick="sendSlider('hue', document.getElementById('hue').value)">Apply Hue</button>
+    <div class="status" id="status">Loading status...</div>
+  </div>
+  <script>
+    async function sendControl(query) {
+      await fetch('/control?' + query);
+      await refreshStatus();
+    }
+    async function sendSlider(name, value) {
+      await fetch('/control?' + name + '=' + encodeURIComponent(value));
+      await refreshStatus();
+    }
+    async function refreshStatus() {
+      const response = await fetch('/status');
+      const status = await response.json();
+      document.getElementById('brightness').value = status.masterBrightness;
+      document.getElementById('hue').value = status.masterHue;
+      document.getElementById('brightnessValue').textContent = status.masterBrightness + '%';
+      document.getElementById('hueValue').textContent = status.masterHue + ' deg';
+      document.getElementById('status').innerHTML =
+        'State: <span class="value">' + status.state + '</span><br>' +
+        'Mode: <span class="value">' + status.mode + '</span><br>' +
+        'Brightness: <span class="value">' + status.masterBrightness + '%</span><br>' +
+                'Hue: <span class="value">' + status.masterHue + ' deg</span>';
+    }
+    refreshStatus();
+    setInterval(refreshStatus, 2000);
+  </script>
+</body>
+</html>
+)HTML";
+
+  server.send(200, "text/html", html);
+}
+
+void handleWebControl() {
+  if (server.hasArg("state")) {
+    String stateValue = server.arg("state");
+
+    if (stateValue == "on" && currentState == OFF_STATE) {
+      startTurnOn();
+    } else if (stateValue == "off" && currentState == ON_STATE) {
+      startTurnOff();
+    }
+  }
+
+  if (server.hasArg("mode")) {
+    int modeValue = constrain(server.arg("mode").toInt(), 0, 6);
+    setMode(static_cast<SaberMode>(modeValue), false);
+  }
+
+  if (server.hasArg("brightness")) {
+    masterBrightnessPercent = constrain(server.arg("brightness").toInt(), 0, 100);
+    applyModeBrightness();
+    refreshModeOutput();
+  }
+
+  if (server.hasArg("hue")) {
+    masterHueDegrees = constrain(server.arg("hue").toInt(), 0, 359);
+    refreshModeOutput();
+  }
+
+  server.send(200, "text/plain", "ok");
+}
+
+void handleWebStatus() {
+  String json = "{";
+  json += "\"state\":\"";
+  json += getStateName(currentState);
+  json += "\",\"mode\":\"";
+  json += getModeName(currentMode);
+  json += "\",\"masterBrightness\":";
+  json += masterBrightnessPercent;
+  json += ",\"masterHue\":";
+  json += masterHueDegrees;
+  json += "}";
+
+  server.send(200, "application/json", json);
+}
+
+void handleCaptivePortalRedirect() {
+  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.sendHeader("Location", "http://192.168.4.1/");
+  server.send(302, "text/plain", "Redirecting to Lightsaber Control");
+}
+
+void refreshModeOutput() {
+  if (currentState != ON_STATE) {
+    return;
+  }
+
+  if (currentMode == DEFAULT_MODE || currentMode == COLOR_CHOOSE_MODE) {
+    fillCurrentBladeColor();
+    strip.show();
+    return;
+  }
+
+  if (currentMode == COUNT_MODE) {
+    showCountModeIdle();
+    strip.show();
+    return;
+  }
+
+  if (currentMode == OFF_MODE) {
+    strip.clear();
+    strip.show();
+  }
+}
+
+int getModeBaseBrightness() {
+  if (currentMode == DEFAULT_MODE) {
+    return SABER_BRIGHTNESS;
+  }
+
+  if (currentMode == COLOR_CHOOSE_MODE) {
+    return COLOR_CHOOSE_BRIGHTNESS;
+  }
+
+  if (currentMode == NIGHTLIGHT_MODE) {
+    return NIGHTLIGHT_BRIGHTNESS;
+  }
+
+  if (currentMode == COUNT_MODE) {
+    return COUNT_MODE_BRIGHTNESS;
+  }
+
+  if (currentMode == RAINBOW_MODE) {
+    return RAINBOW_BRIGHTNESS;
+  }
+
+  if (currentMode == SPIRIT_LEVEL_MODE) {
+    return SPIRIT_LEVEL_BRIGHTNESS;
+  }
+
+  return OFF_MODE_BRIGHTNESS;
+}
+
+uint32_t makeBladeColor(int red, int green, int blue, int white) {
+  int shiftedRed = constrain(red, 0, 255);
+  int shiftedGreen = constrain(green, 0, 255);
+  int shiftedBlue = constrain(blue, 0, 255);
+  int shiftedWhite = constrain(white, 0, 255);
+
+  applyMasterHueShift(shiftedRed, shiftedGreen, shiftedBlue);
+
+  if (shiftedRed == 0 && shiftedGreen == 0 && shiftedBlue == 0 && shiftedWhite > 0 && masterHueDegrees != 0) {
+    int tintRed = 0;
+    int tintGreen = 0;
+    int tintBlue = 0;
+    hueToRgb(static_cast<float>(masterHueDegrees), tintRed, tintGreen, tintBlue);
+    shiftedRed = (tintRed * shiftedWhite) / 765;
+    shiftedGreen = (tintGreen * shiftedWhite) / 765;
+    shiftedBlue = (tintBlue * shiftedWhite) / 765;
+  }
+
+  return strip.Color(shiftedRed, shiftedGreen, shiftedBlue, shiftedWhite);
+}
+
+void applyMasterHueShift(int& red, int& green, int& blue) {
+  if (masterHueDegrees == 0) {
+    return;
+  }
+
+  int maxChannel = max(red, max(green, blue));
+  int minChannel = min(red, min(green, blue));
+  int delta = maxChannel - minChannel;
+
+  if (delta == 0 || maxChannel == 0) {
+    return;
+  }
+
+  float hue = 0.0;
+  float saturation = static_cast<float>(delta) / static_cast<float>(maxChannel);
+  float value = static_cast<float>(maxChannel) / 255.0;
+
+  if (maxChannel == red) {
+    hue = 60.0 * fmod(((green - blue) / static_cast<float>(delta)), 6.0f);
+  } else if (maxChannel == green) {
+    hue = 60.0 * (((blue - red) / static_cast<float>(delta)) + 2.0f);
+  } else {
+    hue = 60.0 * (((red - green) / static_cast<float>(delta)) + 4.0f);
+  }
+
+  if (hue < 0.0) {
+    hue += 360.0;
+  }
+
+  hue += static_cast<float>(masterHueDegrees);
+  while (hue >= 360.0) {
+    hue -= 360.0;
+  }
+
+  float chroma = value * saturation;
+  float hueSection = hue / 60.0;
+  float x = chroma * (1.0 - fabs(fmod(hueSection, 2.0f) - 1.0f));
+  float match = value - chroma;
+  float redPrime = 0.0;
+  float greenPrime = 0.0;
+  float bluePrime = 0.0;
+
+  if (hueSection < 1.0) {
+    redPrime = chroma;
+    greenPrime = x;
+  } else if (hueSection < 2.0) {
+    redPrime = x;
+    greenPrime = chroma;
+  } else if (hueSection < 3.0) {
+    greenPrime = chroma;
+    bluePrime = x;
+  } else if (hueSection < 4.0) {
+    greenPrime = x;
+    bluePrime = chroma;
+  } else if (hueSection < 5.0) {
+    redPrime = x;
+    bluePrime = chroma;
+  } else {
+    redPrime = chroma;
+    bluePrime = x;
+  }
+
+  red = constrain(static_cast<int>((redPrime + match) * 255.0f + 0.5f), 0, 255);
+  green = constrain(static_cast<int>((greenPrime + match) * 255.0f + 0.5f), 0, 255);
+  blue = constrain(static_cast<int>((bluePrime + match) * 255.0f + 0.5f), 0, 255);
+}
+
+void hueToRgb(float hueDegrees, int& red, int& green, int& blue) {
+  float chroma = 1.0;
+  float hueSection = hueDegrees / 60.0;
+  float x = chroma * (1.0 - fabs(fmod(hueSection, 2.0f) - 1.0f));
+  float redPrime = 0.0;
+  float greenPrime = 0.0;
+  float bluePrime = 0.0;
+
+  if (hueSection < 1.0) {
+    redPrime = chroma;
+    greenPrime = x;
+  } else if (hueSection < 2.0) {
+    redPrime = x;
+    greenPrime = chroma;
+  } else if (hueSection < 3.0) {
+    greenPrime = chroma;
+    bluePrime = x;
+  } else if (hueSection < 4.0) {
+    greenPrime = x;
+    bluePrime = chroma;
+  } else if (hueSection < 5.0) {
+    redPrime = x;
+    bluePrime = chroma;
+  } else {
+    redPrime = chroma;
+    bluePrime = x;
+  }
+
+  red = static_cast<int>(redPrime * 255.0f + 0.5f);
+  green = static_cast<int>(greenPrime * 255.0f + 0.5f);
+  blue = static_cast<int>(bluePrime * 255.0f + 0.5f);
+}
+
+const char* getModeName(SaberMode mode) {
+  if (mode == DEFAULT_MODE) {
+    return "Default";
+  }
+
+  if (mode == COLOR_CHOOSE_MODE) {
+    return "Color";
+  }
+
+  if (mode == NIGHTLIGHT_MODE) {
+    return "Nightlight";
+  }
+
+  if (mode == COUNT_MODE) {
+    return "Count";
+  }
+
+  if (mode == RAINBOW_MODE) {
+    return "Rainbow";
+  }
+
+  if (mode == SPIRIT_LEVEL_MODE) {
+    return "Spirit level";
+  }
+
+  return "LED off";
+}
+
+const char* getStateName(SaberState state) {
+  if (state == OFF_STATE) {
+    return "Off";
+  }
+
+  if (state == TURNING_ON_STATE) {
+    return "Turning on";
+  }
+
+  if (state == ON_STATE) {
+    return "On";
+  }
+
+  return "Turning off";
 }
