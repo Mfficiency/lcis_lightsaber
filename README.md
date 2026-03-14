@@ -382,6 +382,20 @@ Combine button control, Led Strip animation, motion detection, and sound into on
 
 ## Extra's
 
+### special_scripts
+
+The `special_scripts` folder contains helper sketches that are useful for setup, troubleshooting, and calibration.
+They are not part of the main step-by-step lesson flow, but they help you test hardware or tune sensor behavior before continuing with the normal lessons.
+
+- `basic_power_up`: a simple combined demo with button, LED strip, buzzer, and optional orientation behavior
+- `special_find_led_strip_pin`: tests candidate output pins one by one so you can find which pin is connected to the LED strip data line
+- `special_read_button_all_pins`: reads all candidate button pins and prints which one goes `PRESSED` when the button is wired to ground
+- `step_13b_orientation_calibration`: prints accelerometer values and interpreted saber orientation so you can adjust the MPU6050 axis mapping
+- `step_13c_orientation_colors`: changes blade colors based on orientation to visually confirm the orientation mapping is correct
+- `step_14b_movement_calibration`: prints gyroscope rotation values so you can check movement directions and tune rotation thresholds
+
+Use these sketches when something in the hardware setup is unclear, or when the MPU6050 orientation does not match the expected lesson wiring.
+
 ### WLED
 
 WLED is a ready-made LED controller firmware for ESP boards.

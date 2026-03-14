@@ -64,10 +64,13 @@ float getMappedAxis(float x, float y, float z, AxisName axisName, int axisSign);
 OrientationState getOrientationState(float saberRight, float saberTip, float saberUp);
 bool isPerfectHorizontal(float saberRight, float saberTip, float saberUp);
 bool isPerfectVertical(float saberRight, float saberTip, float saberUp);
-void showOrientationColor(OrientationState orientationState, bool showCenterWhite);
+bool isPerfectSideways(float saberRight, float saberTip, float saberUp);
+void showOrientationColor(OrientationState orientationState, bool showCenterWhite, uint32_t colorValue);
 void fillBlade(uint32_t colorValue);
 void setMiddleWhite();
-void printOrientation(OrientationState orientationState, bool perfectHorizontal, bool perfectVertical);
+void printOrientation(OrientationState orientationState, bool perfectHorizontal, bool perfectVertical, bool perfectSideways);
+void printRawAcceleration(float x, float y, float z);
+uint32_t getMixedOrientationColor(float saberRight, float saberTip, float saberUp);
 
 void setup() {
   Serial.begin(115200);
@@ -120,9 +123,19 @@ void loop() {
   OrientationState orientationState = getOrientationState(saberRight, saberTip, saberUp);
   bool perfectHorizontal = isPerfectHorizontal(saberRight, saberTip, saberUp);
   bool perfectVertical = isPerfectVertical(saberRight, saberTip, saberUp);
+  bool perfectSideways = isPerfectSideways(saberRight, saberTip, saberUp);
 
-  showOrientationColor(orientationState, perfectHorizontal || perfectVertical);
-  printOrientation(orientationState, perfectHorizontal, perfectVertical);
+  printRawAcceleration(
+    accelEvent.acceleration.x,
+    accelEvent.acceleration.y,
+    accelEvent.acceleration.z
+  );
+  showOrientationColor(
+    orientationState,
+    perfectHorizontal || perfectVertical || perfectSideways,
+    getMixedOrientationColor(saberRight, saberTip, saberUp)
+  );
+  printOrientation(orientationState, perfectHorizontal, perfectVertical, perfectSideways);
 
   delay(120);
 }
@@ -181,23 +194,13 @@ bool isPerfectVertical(float saberRight, float saberTip, float saberUp) {
          abs(saberTip) > ORIENTATION_THRESHOLD;
 }
 
-void showOrientationColor(OrientationState orientationState, bool showCenterWhite) {
-  uint32_t colorValue = strip.Color(0, 0, 0, 10);
+bool isPerfectSideways(float saberRight, float saberTip, float saberUp) {
+  return abs(saberUp) < ALIGNMENT_THRESHOLD &&
+         abs(saberTip) < ALIGNMENT_THRESHOLD &&
+         abs(saberRight) > ORIENTATION_THRESHOLD;
+}
 
-  if (orientationState == FACE_UP_STATE) {
-    colorValue = strip.Color(0, 0, 255, 0);
-  } else if (orientationState == FACE_DOWN_STATE) {
-    colorValue = strip.Color(255, 0, 0, 0);
-  } else if (orientationState == RIGHT_STATE) {
-    colorValue = strip.Color(0, 255, 0, 0);
-  } else if (orientationState == LEFT_STATE) {
-    colorValue = strip.Color(180, 0, 180, 0);
-  } else if (orientationState == TIP_DOWN_STATE) {
-    colorValue = strip.Color(255, 80, 0, 0);
-  } else if (orientationState == TIP_UP_STATE) {
-    colorValue = strip.Color(0, 180, 180, 0);
-  }
-
+void showOrientationColor(OrientationState orientationState, bool showCenterWhite, uint32_t colorValue) {
   fillBlade(colorValue);
 
   if (showCenterWhite) {
@@ -205,6 +208,23 @@ void showOrientationColor(OrientationState orientationState, bool showCenterWhit
   }
 
   strip.show();
+}
+
+void printRawAcceleration(float x, float y, float z) {
+  Serial.print("Raw accel X: ");
+  Serial.print(x);
+  Serial.print("  Y: ");
+  Serial.print(y);
+  Serial.print("  Z: ");
+  Serial.println(z);
+}
+
+uint32_t getMixedOrientationColor(float saberRight, float saberTip, float saberUp) {
+  int redValue = constrain((int)(abs(saberTip) * 25.0), 0, 255);
+  int greenValue = constrain((int)(abs(saberRight) * 25.0), 0, 255);
+  int blueValue = constrain((int)(abs(saberUp) * 25.0), 0, 255);
+
+  return strip.Color(redValue, greenValue, blueValue, 0);
 }
 
 void fillBlade(uint32_t colorValue) {
@@ -221,7 +241,7 @@ void setMiddleWhite() {
   strip.setPixelColor(rightCenter, strip.Color(0, 0, 0, 80));
 }
 
-void printOrientation(OrientationState orientationState, bool perfectHorizontal, bool perfectVertical) {
+void printOrientation(OrientationState orientationState, bool perfectHorizontal, bool perfectVertical, bool perfectSideways) {
   if (orientationState == FACE_UP_STATE) {
     Serial.println("Orientation: flat, face up");
   } else if (orientationState == FACE_DOWN_STATE) {
@@ -242,5 +262,10 @@ void printOrientation(OrientationState orientationState, bool perfectHorizontal,
     Serial.println("Alignment: perfectly horizontal");
   } else if (perfectVertical) {
     Serial.println("Alignment: perfectly vertical");
+  } else if (perfectSideways) {
+    Serial.println("Alignment: perfectly sideways");
+  } else {
+    Serial.println("Alignment: not perfectly horizontal, vertical, or sideways");
   }
+
 }
