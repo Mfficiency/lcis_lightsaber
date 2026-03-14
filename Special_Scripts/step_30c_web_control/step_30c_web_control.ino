@@ -68,6 +68,7 @@ const unsigned long IDLE_INTERVAL_MS = 60;
 const unsigned long ORIENTATION_UPDATE_MS = 120;
 const unsigned long DOUBLE_PRESS_MS = 220;
 const unsigned long COUNT_HOLD_START_MS = 250;
+const unsigned long SPIRIT_LEVEL_HOLD_MS = 400;
 const unsigned long COUNT_UP_INTERVAL_MS = 700;
 const unsigned long COUNT_DOWN_INTERVAL_MS = 1000;
 const unsigned long RAINBOW_UPDATE_MS = 40;
@@ -116,6 +117,12 @@ enum AxisName {
   AXIS_Z
 };
 
+enum SpiritLevelAxisMode {
+  SPIRIT_LEVEL_AXIS_RIGHT,
+  SPIRIT_LEVEL_AXIS_TIP,
+  SPIRIT_LEVEL_AXIS_UP
+};
+
 const AxisName SABER_RIGHT_AXIS = AXIS_Y;
 const AxisName SABER_TIP_AXIS = AXIS_Z;
 const AxisName SABER_UP_AXIS = AXIS_X;
@@ -148,12 +155,14 @@ unsigned long buttonPressStart = 0;
 unsigned long lastReleaseTime = 0;
 bool pendingShortPress = false;
 bool countHoldActive = false;
+bool spiritLevelHoldActive = false;
 float smoothedNightLightWhite = 5.0;
 float smoothedNightLightLitCount = LED_COUNT;
 float rainbowTemperature = 0.5;
 uint16_t rainbowOffset = 0;
 RainbowPaletteMode rainbowPaletteMode = RAINBOW_ALL_COLORS;
 unsigned long lastRainbowSwingTime = 0;
+SpiritLevelAxisMode spiritLevelAxisMode = SPIRIT_LEVEL_AXIS_RIGHT;
 
 Adafruit_MPU6050 mpu;
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
@@ -177,6 +186,7 @@ void updateNightLightMode();
 void updateCountMode();
 void updateRainbowMode();
 void updateSpiritLevelMode();
+void cycleSpiritLevelAxis();
 void handleMotionEffects();
 void swingEffect();
 void clashEffect();
@@ -276,6 +286,7 @@ void handleButton() {
   if (buttonState == LOW && lastButtonState == HIGH) {
     buttonPressStart = now;
     countHoldActive = false;
+    spiritLevelHoldActive = false;
   }
 
   if (buttonState == LOW && currentState == ON_STATE && currentMode == COUNT_MODE && !countHoldActive) {
@@ -298,6 +309,14 @@ void handleButton() {
     }
   }
 
+  if (buttonState == LOW && currentState == ON_STATE && currentMode == SPIRIT_LEVEL_MODE && !spiritLevelHoldActive) {
+    if (now - buttonPressStart >= SPIRIT_LEVEL_HOLD_MS) {
+      pendingShortPress = false;
+      spiritLevelHoldActive = true;
+      cycleSpiritLevelAxis();
+    }
+  }
+
   if (buttonState == HIGH && lastButtonState == LOW) {
     if (countHoldActive) {
       countHoldActive = false;
@@ -312,6 +331,8 @@ void handleButton() {
           countModeState = COUNT_IDLE_STATE;
         }
       }
+    } else if (spiritLevelHoldActive) {
+      spiritLevelHoldActive = false;
     } else if (currentState == ON_STATE) {
       if (pendingShortPress && now - lastReleaseTime <= DOUBLE_PRESS_MS) {
         pendingShortPress = false;
@@ -695,8 +716,27 @@ void updateSpiritLevelMode() {
   float saberUp = 0.0;
   readOrientation(saberRight, saberTip, saberUp);
 
-  showSpiritLevel(saberRight);
+  float spiritLevelValue = saberRight;
+  if (spiritLevelAxisMode == SPIRIT_LEVEL_AXIS_TIP) {
+    spiritLevelValue = saberTip;
+  } else if (spiritLevelAxisMode == SPIRIT_LEVEL_AXIS_UP) {
+    spiritLevelValue = saberUp;
+  }
+
+  showSpiritLevel(spiritLevelValue);
   strip.show();
+}
+
+void cycleSpiritLevelAxis() {
+  spiritLevelAxisMode = static_cast<SpiritLevelAxisMode>((spiritLevelAxisMode + 1) % 3);
+
+  if (spiritLevelAxisMode == SPIRIT_LEVEL_AXIS_RIGHT) {
+    Serial.println("Spirit level axis -> right");
+  } else if (spiritLevelAxisMode == SPIRIT_LEVEL_AXIS_TIP) {
+    Serial.println("Spirit level axis -> tip");
+  } else {
+    Serial.println("Spirit level axis -> up");
+  }
 }
 
 void handleMotionEffects() {
@@ -1131,11 +1171,12 @@ void handleWebRoot() {
       <div id="timerSection" class="section-hidden">
         <label for="timerMinutes">Timer Minutes <span id="timerMinutesValue" class="value"></span></label>
         <input id="timerMinutes" type="number" min="1" max="60" value="5" oninput="document.getElementById('timerMinutesValue').textContent=this.value + ' min'">
-        <div class="buttons">
-          <button class="timer-button" onclick="sendTimerAction('start')">Start</button>
-          <button class="timer-button alt" onclick="sendTimerAction('stop')">Stop</button>
-          <button class="timer-button alt" onclick="sendTimerAction('reset')">Reset</button>
-        </div>
+      <div class="buttons">
+        <button class="timer-button" onclick="sendTimerAction('start')">Start</button>
+        <button class="timer-button alt" onclick="sendTimerAction('stop')">Stop</button>
+        <button class="timer-button alt" onclick="sendTimerAction('reset')">Reset</button>
+      </div>
+      <div class="small" id="timerCountdown">Timer not running.</div>
       </div>
       <div class="status" id="status">Loading status...</div>
     </div>
@@ -1157,6 +1198,9 @@ void handleWebRoot() {
   <script>
     let brightnessDirty = false;
     let hueDirty = false;
+    let localTimerSeconds = null;
+    let countdownTickHandle = null;
+    let countdownSyncHandle = null;
 
     function showMain() {
       document.getElementById('mainView').classList.remove('hidden');
@@ -1167,12 +1211,78 @@ void handleWebRoot() {
       document.getElementById('settingsView').classList.remove('hidden');
     }
     function showAbout() {
-      window.alert('powered by mfficiency.com');
+      window.open('https://mfficiency.com', '_blank', 'noopener');
     }
     function setDisabledForSelector(selector, disabled) {
       document.querySelectorAll(selector).forEach((element) => {
         element.disabled = disabled;
       });
+    }
+    function formatTimerCountdown(totalSeconds) {
+      const safeSeconds = Math.max(0, totalSeconds);
+      const minutes = Math.floor(safeSeconds / 60);
+      const seconds = safeSeconds % 60;
+      return minutes + ':' + String(seconds).padStart(2, '0');
+    }
+    function stopLocalCountdown() {
+      if (countdownTickHandle) {
+        clearInterval(countdownTickHandle);
+        countdownTickHandle = null;
+      }
+      if (countdownSyncHandle) {
+        clearTimeout(countdownSyncHandle);
+        countdownSyncHandle = null;
+      }
+    }
+    function renderLocalCountdown(timerState) {
+      const countdownElement = document.getElementById('timerCountdown');
+      if (timerState === 'Running' && localTimerSeconds !== null) {
+        countdownElement.textContent = 'Time left: ' + formatTimerCountdown(localTimerSeconds);
+        return;
+      }
+      if (timerState === 'Paused' && localTimerSeconds !== null) {
+        countdownElement.textContent = 'Paused at ' + formatTimerCountdown(localTimerSeconds);
+        return;
+      }
+      countdownElement.textContent = 'Timer not running.';
+    }
+    function scheduleCountdownSync() {
+      if (countdownSyncHandle) {
+        clearTimeout(countdownSyncHandle);
+      }
+      countdownSyncHandle = setTimeout(() => {
+        refreshStatus();
+      }, 60000);
+    }
+    function startLocalCountdown(secondsRemaining) {
+      stopLocalCountdown();
+      localTimerSeconds = Math.max(0, secondsRemaining);
+      renderLocalCountdown('Running');
+      countdownTickHandle = setInterval(() => {
+        if (localTimerSeconds === null || localTimerSeconds <= 0) {
+          stopLocalCountdown();
+          localTimerSeconds = 0;
+          renderLocalCountdown('Idle');
+          return;
+        }
+        localTimerSeconds -= 1;
+        renderLocalCountdown('Running');
+      }, 1000);
+      scheduleCountdownSync();
+    }
+    function syncTimerState(status) {
+      if (status.timerState === 'Running') {
+        startLocalCountdown(status.timerSecondsRemaining);
+        return;
+      }
+      stopLocalCountdown();
+      if (status.timerState === 'Paused') {
+        localTimerSeconds = status.timerSecondsRemaining;
+        renderLocalCountdown('Paused');
+        return;
+      }
+      localTimerSeconds = null;
+      renderLocalCountdown('Idle');
     }
     function applyPowerState(status) {
       const isOn = status.state === 'On';
@@ -1211,6 +1321,7 @@ void handleWebRoot() {
       const response = await fetch('/status');
       const status = await response.json();
       applyPowerState(status);
+      syncTimerState(status);
       document.getElementById('timerMinutes').value = status.timerSelectedMinutes;
       document.getElementById('timerMinutesValue').textContent = status.timerSelectedMinutes + ' min';
       if (!brightnessDirty) {
@@ -1245,7 +1356,11 @@ void handleWebRoot() {
       hueDirty = true;
     });
     refreshStatus();
-    setInterval(refreshStatus, 2000);
+    setInterval(() => {
+      if (countdownTickHandle === null) {
+        refreshStatus();
+      }
+    }, 5000);
   </script>
 </body>
 </html>
@@ -1327,6 +1442,14 @@ void handleWebStatus() {
   json += max(1, countModeSelectedMinutes);
   json += ",\"timerMinutesRemaining\":";
   json += countModeMinutesRemaining;
+  json += ",\"timerSecondsRemaining\":";
+  if (countModeState == COUNT_RUNNING_STATE || countModeState == COUNT_PAUSED_STATE) {
+    json += max(0, ((countModeMinutesRemaining - 1) * LED_COUNT) + countModeWhiteLedCount);
+  } else if (countModeSelectedMinutes > 0) {
+    json += countModeSelectedMinutes * LED_COUNT;
+  } else {
+    json += 0;
+  }
   json += "}";
 
   server.send(200, "application/json", json);
