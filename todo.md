@@ -16,3 +16,4 @@ after on and off animation, link this to a button
 - master brightness can max go to 2/225, it will never go below 1
 - update timer with wifi
 - look for what to do with bluetooth, sync with music, sync with other sabers
+- test Wled
