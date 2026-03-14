@@ -20,6 +20,7 @@ const int SAFE_BRIGHTNESS = 25;
 int redValue = 255;
 int greenValue = 0;
 int blueValue = 0;
+int whiteValue = 0;
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
 
@@ -31,22 +32,26 @@ void setup() {
 }
 
 void loop() {
-  fillBlade(redValue, greenValue, blueValue);
+  fillBlade(redValue, greenValue, blueValue, whiteValue);
   Serial.println("Led Strip color -> RED");
   delay(1000);
 
-  fillBlade(0, 255, 0);
+  fillBlade(0, 255, 0, 0);
   Serial.println("Led Strip color -> GREEN");
   delay(1000);
 
-  fillBlade(0, 0, 255);
+  fillBlade(0, 0, 255, 0);
   Serial.println("Led Strip color -> BLUE");
+  delay(1000);
+
+  fillBlade(0, 0, 0, 50);
+  Serial.println("Led Strip color -> WHITE");
   delay(1000);
 }
 
-void fillBlade(int red, int green, int blue) {
+void fillBlade(int red, int green, int blue, int white) {
   for (int i = 0; i < LED_COUNT; i++) {
-    strip.setPixelColor(i, strip.Color(red, green, blue));
+    strip.setPixelColor(i, strip.Color(red, green, blue, white));
   }
 
   strip.show();

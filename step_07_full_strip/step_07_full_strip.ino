@@ -30,7 +30,7 @@ void setup() {
 
 void loop() {
   for (int i = 0; i < LED_COUNT; i++) {
-    strip.setPixelColor(i, strip.Color(255, 255, 255));
+    strip.setPixelColor(i, strip.Color(0, 0, 100, 100));
   }
 
   strip.show();

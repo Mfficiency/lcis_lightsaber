@@ -29,7 +29,7 @@ void setup() {
 }
 
 void loop() {
-  strip.setPixelColor(0, strip.Color(255, 255, 255));
+  strip.setPixelColor(0, strip.Color(255, 0, 0, 255));
   strip.show();
   Serial.println("Pixel 0 ON");
   delay(500);

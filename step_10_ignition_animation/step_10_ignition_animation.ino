@@ -41,7 +41,7 @@ void loop() {
 
 void igniteBlade() {
   for (int i = 0; i < LED_COUNT; i++) {
-    strip.setPixelColor(i, strip.Color(255, 255, 255));
+    strip.setPixelColor(i, strip.Color(0, 100, 0, 100));
     strip.show();
     delay(30);
   }
