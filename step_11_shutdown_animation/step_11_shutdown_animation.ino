@@ -16,6 +16,11 @@ const int LED_STRIP_PIN = D8;
 #endif
 const int LED_COUNT = 60;
 const int SAFE_BRIGHTNESS = 25;
+const int SHUTDOWN_PEAK_BRIGHTNESS = 60;
+const int BLADE_RED = 0;
+const int BLADE_GREEN = 100;
+const int BLADE_BLUE = 0;
+const int BLADE_WHITE = 100;
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
 
@@ -41,17 +46,46 @@ void loop() {
 
 void igniteBlade() {
   for (int i = 0; i < LED_COUNT; i++) {
-    strip.setPixelColor(i, strip.Color(255, 255, 255));
+    strip.setPixelColor(i, strip.Color(BLADE_RED, BLADE_GREEN, BLADE_BLUE, BLADE_WHITE));
     strip.show();
     delay(30);
   }
 }
 
 void shutdownBlade() {
-  for (int i = LED_COUNT - 1; i >= 0; i--) {
-    strip.setPixelColor(i, 0);
+  for (int brightness = SAFE_BRIGHTNESS; brightness <= SHUTDOWN_PEAK_BRIGHTNESS; brightness += 5) {
+    strip.setBrightness(brightness);
+    strip.show();
+    delay(15);
+  }
+
+  for (int brightness = SHUTDOWN_PEAK_BRIGHTNESS; brightness >= SAFE_BRIGHTNESS; brightness -= 5) {
+    strip.setBrightness(brightness);
+    strip.show();
+    delay(35);
+  }
+
+  int leftIndex = (LED_COUNT - 1) / 2;
+  int rightIndex = LED_COUNT / 2;
+
+  while (leftIndex >= 0 || rightIndex < LED_COUNT) {
+    if (leftIndex >= 0) {
+      strip.setPixelColor(leftIndex, 0);
+    }
+
+    if (rightIndex < LED_COUNT) {
+      strip.setPixelColor(rightIndex, 0);
+    }
+
     strip.show();
     delay(30);
+
+    leftIndex--;
+    rightIndex++;
   }
+
+  strip.setBrightness(SAFE_BRIGHTNESS);
+  strip.clear();
+  strip.show();
 }
 

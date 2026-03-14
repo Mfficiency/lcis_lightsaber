@@ -38,10 +38,10 @@ void loop() {
     Serial.println("Button pressed");
 
     if (saberOn) {
-      turnBladeOn();
+      igniteBlade();
       Serial.println("Led Strip ON");
     } else {
-      turnBladeOff();
+      shutdownBlade();
       Serial.println("Led Strip OFF");
     }
   }
@@ -50,7 +50,7 @@ void loop() {
   delay(20);
 }
 
-void turnBladeOn() {
+void igniteBlade() {
   for (int i = 0; i < LED_COUNT; i++) {
     strip.setPixelColor(i, strip.Color(255, 255, 255));
   }
@@ -58,7 +58,7 @@ void turnBladeOn() {
   strip.show();
 }
 
-void turnBladeOff() {
+void shutdownBlade() {
   strip.clear();
   strip.show();
 }

@@ -23,7 +23,7 @@ void setup() {
   Serial.begin(115200);
   strip.begin();
   strip.setBrightness(BRIGHTNESS);
-  turnBladeOn();
+  igniteBlade();
   Serial.print("Led Strip ON at brightness ");
   Serial.println(BRIGHTNESS);
 }
@@ -31,7 +31,7 @@ void setup() {
 void loop() {
 }
 
-void turnBladeOn() {
+void igniteBlade() {
   for (int i = 0; i < LED_COUNT; i++) {
     strip.setPixelColor(i, strip.Color(0, 0, 255));
   }
