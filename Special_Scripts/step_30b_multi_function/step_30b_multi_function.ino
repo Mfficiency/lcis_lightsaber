@@ -880,9 +880,9 @@ void renderCountMode(int greenLedCount, int whiteLedCount) {
 
     getCountModeBaseColor(i, redValue, greenValue, blueValue, whiteValue);
     if (i < greenLedCount) {
-      greenValue = min(255, greenValue + 90);
+      greenValue = min(255, greenValue + 40);
     }
-    whiteValue = min(255, whiteValue + 45);
+    whiteValue = min(255, whiteValue + 12);
     strip.setPixelColor(i, strip.Color(redValue, greenValue, blueValue, whiteValue));
   }
 }
