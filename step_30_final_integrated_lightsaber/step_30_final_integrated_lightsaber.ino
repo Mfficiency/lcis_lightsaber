@@ -48,7 +48,7 @@ unsigned long lastAnimationUpdate = 0;
 unsigned long lastIdleUpdate = 0;
 
 Adafruit_MPU6050 mpu;
-Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -194,4 +194,5 @@ void setBladeColor(int red, int green, int blue) {
 
   strip.show();
 }
+
 

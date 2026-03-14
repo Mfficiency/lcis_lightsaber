@@ -22,7 +22,7 @@ const int SAFE_BRIGHTNESS = 25;
 const float SWING_THRESHOLD = 4.0;
 
 Adafruit_MPU6050 mpu;
-Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200);
@@ -70,4 +70,5 @@ void flashBlade() {
   delay(80);
   setBladeColor(0, 0, 180);
 }
+
 

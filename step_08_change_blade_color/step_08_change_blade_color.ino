@@ -21,7 +21,7 @@ int redValue = 255;
 int greenValue = 0;
 int blueValue = 0;
 
-Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200);
@@ -51,3 +51,4 @@ void fillBlade(int red, int green, int blue) {
 
   strip.show();
 }
+
