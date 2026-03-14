@@ -21,7 +21,7 @@ const int GYRO_SDA_PIN = D10;
 #endif
 
 const int LED_COUNT = 60;
-const int BLADE_BRIGHTNESS = 80;
+const int BLADE_BRIGHTNESS = 25;
 const float SWING_THRESHOLD = 4.0;
 const int BLADE_RED = 0;
 const int BLADE_GREEN = 0;
@@ -79,3 +79,4 @@ void setBladeColor(int red, int green, int blue) {
 
   strip.show();
 }
+

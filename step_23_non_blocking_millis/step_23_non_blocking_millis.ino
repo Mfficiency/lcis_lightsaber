@@ -13,6 +13,7 @@ const int LED_STRIP_PIN = D9;
 #endif
 
 const int LED_COUNT = 60;
+const int SAFE_BRIGHTNESS = 25;
 const unsigned long STEP_DELAY_MS = 30;
 
 bool saberOn = false;
@@ -27,6 +28,7 @@ void setup() {
   Serial.begin(115200);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   strip.begin();
+  strip.setBrightness(SAFE_BRIGHTNESS);
   strip.clear();
   strip.show();
   Serial.println("Non-blocking Led Strip control ready. Led Strip OFF");
@@ -70,7 +72,7 @@ void updateBladeAnimation() {
   lastUpdate = now;
 
   if (saberOn) {
-    strip.setPixelColor(litPixels, strip.Color(0, 0, 255));
+    strip.setPixelColor(litPixels, strip.Color(255, 255, 255));
     litPixels++;
     strip.show();
 
@@ -89,3 +91,4 @@ void updateBladeAnimation() {
     }
   }
 }
+

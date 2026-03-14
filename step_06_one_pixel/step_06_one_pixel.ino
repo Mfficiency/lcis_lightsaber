@@ -15,17 +15,27 @@ const int LED_STRIP_PIN = 2;
 const int LED_STRIP_PIN = D9;
 #endif
 const int LED_COUNT = 60;
+const int SAFE_BRIGHTNESS = 25;
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200);
   strip.begin();
+  strip.setBrightness(SAFE_BRIGHTNESS);
   strip.clear();
-  strip.setPixelColor(0, strip.Color(0, 0, 255));
   strip.show();
-  Serial.println("Led Strip pixel 0 ON");
+  Serial.println("Pixel 0 blink demo ready at 10 percent power.");
 }
 
 void loop() {
+  strip.setPixelColor(0, strip.Color(255, 255, 255));
+  strip.show();
+  Serial.println("Pixel 0 ON");
+  delay(500);
+
+  strip.setPixelColor(0, 0);
+  strip.show();
+  Serial.println("Pixel 0 OFF");
+  delay(500);
 }

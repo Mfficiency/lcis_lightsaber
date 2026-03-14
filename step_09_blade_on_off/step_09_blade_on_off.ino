@@ -15,12 +15,14 @@ const int LED_STRIP_PIN = 2;
 const int LED_STRIP_PIN = D9;
 #endif
 const int LED_COUNT = 60;
+const int SAFE_BRIGHTNESS = 25;
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200);
   strip.begin();
+  strip.setBrightness(SAFE_BRIGHTNESS);
   Serial.println("Led Strip on/off demo ready.");
 }
 
@@ -36,7 +38,7 @@ void loop() {
 
 void bladeOn() {
   for (int i = 0; i < LED_COUNT; i++) {
-    strip.setPixelColor(i, strip.Color(0, 0, 255));
+    strip.setPixelColor(i, strip.Color(255, 255, 255));
   }
 
   strip.show();

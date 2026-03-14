@@ -18,6 +18,7 @@ const int GYRO_SDA_PIN = D10;
 #endif
 
 const int LED_COUNT = 60;
+const int SAFE_BRIGHTNESS = 25;
 const float SWING_THRESHOLD = 4.0;
 
 Adafruit_MPU6050 mpu;
@@ -27,6 +28,7 @@ void setup() {
   Serial.begin(115200);
   Wire.begin(GYRO_SDA_PIN, GYRO_SCL_PIN);
   strip.begin();
+  strip.setBrightness(SAFE_BRIGHTNESS);
   setBladeColor(0, 0, 180);
   Serial.println("Swing flash demo ready.");
 
@@ -68,3 +70,4 @@ void flashBlade() {
   delay(80);
   setBladeColor(0, 0, 180);
 }
+

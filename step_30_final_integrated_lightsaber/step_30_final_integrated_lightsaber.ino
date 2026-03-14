@@ -1,4 +1,11 @@
 // STEP 30: Final Integrated Lightsaber
+//
+// ******************************************************
+// WARNING: THIS IS THE ONLY LESSON SKETCH THAT MAY RUN
+// ABOVE 10 PERCENT LED BRIGHTNESS.
+// USE A PROPER POWER SOURCE FOR THE LED STRIP.
+// DO NOT COPY THIS BRIGHTNESS SETTING INTO EARLIER STEPS.
+// ******************************************************
 
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_NeoPixel.h>
@@ -48,6 +55,8 @@ void setup() {
   Serial.begin(115200);
   Wire.begin(GYRO_SDA_PIN, GYRO_SCL_PIN);
   Serial.println("Final lightsaber ready. State -> OFF");
+  Serial.println("WARNING: this sketch can drive the strip above 10 percent brightness.");
+  Serial.println("WARNING: use proper external LED power and common ground.");
 
   strip.begin();
   strip.setBrightness(BLADE_BRIGHTNESS);
@@ -185,3 +194,4 @@ void setBladeColor(int red, int green, int blue) {
 
   strip.show();
 }
+

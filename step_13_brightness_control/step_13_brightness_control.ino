@@ -15,7 +15,7 @@ const int LED_STRIP_PIN = 2;
 const int LED_STRIP_PIN = D9;
 #endif
 const int LED_COUNT = 60;
-const int BRIGHTNESS = 80;
+const int BRIGHTNESS = 25;
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -38,3 +38,4 @@ void turnBladeOn() {
 
   strip.show();
 }
+
