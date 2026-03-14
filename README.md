@@ -59,6 +59,8 @@ This progression is designed to introduce programming concepts step by step whil
 			- [29. Clash Sound](#29-clash-sound)
 			- [30. Final Integrated Lightsaber](#30-final-integrated-lightsaber)
 	- [Extra's](#extras)
+		- [special\_scripts](#special_scripts)
+			- [Step 30B](#step-30b)
 		- [WLED](#wled)
 			- [What WLED is good for](#what-wled-is-good-for)
 			- [Important note for the XIAO ESP32-C3](#important-note-for-the-xiao-esp32-c3)
@@ -395,6 +397,11 @@ They are not part of the main step-by-step lesson flow, but they help you test h
 - `step_14b_movement_calibration`: prints gyroscope rotation values so you can check movement directions and tune rotation thresholds
 
 Use these sketches when something in the hardware setup is unclear, or when the MPU6050 orientation does not match the expected lesson wiring.
+
+#### Step 30B
+
+Here there are different modes added.
+
 
 ### WLED
 
