@@ -35,10 +35,11 @@ This progression is designed to introduce programming concepts step by step whil
 			- [10. Ignition Animation](#10-ignition-animation)
 			- [11. Shutdown Animation](#11-shutdown-animation)
 			- [12. Button Toggles Led Strip On and Off](#12-button-toggles-led-strip-on-and-off)
-			- [13A. Print Raw Acceleration Data](#13a-print-raw-acceleration-data)
-			- [13B. Detect Lightsaber Orientation](#13b-detect-lightsaber-orientation)
 		- [Motion and Sensors](#motion-and-sensors)
+			- [13. Print Raw Acceleration Data](#13-print-raw-acceleration-data)
+			- [13B. Orientation Calibration](#13b-orientation-calibration)
 			- [14. Orientation and Acceleration](#14-orientation-and-acceleration)
+			- [14B. Movement Calibration](#14b-movement-calibration)
 			- [15. Detect Movement](#15-detect-movement)
 			- [16. Swing Detection](#16-swing-detection)
 			- [17. Light Flash on Swing](#17-light-flash-on-swing)
@@ -200,8 +201,9 @@ Start at Step 1 and move forward in order:
 - `step_11_shutdown_animation`
 - `step_12_button_toggle_blade`
 - `step_13a_raw_acceleration`
-- `step_13b_detect_orientation`
+- `Special_Scripts/step_13b_orientation_calibration/step_13b_orientation_calibration.ino`
 - `step_14_read_gyroscope`
+- `Special_Scripts/step_14b_movement_calibration/step_14b_movement_calibration.ino`
 - `step_15_detect_movement`
 - `step_16_swing_detection`
 - `step_17_light_flash_on_swing`
@@ -283,22 +285,28 @@ This shows how changing a loop changes behavior.
 
 Use the button to switch the Led Strip fully on or fully off.
 This connects button input to a persistent output state.
-#### 13A. Print Raw Acceleration Data
+
+### Motion and Sensors
+
+#### 13. Print Raw Acceleration Data
 
 Print the raw X, Y, and Z acceleration values from the MPU6050.
 This helps students see the sensor data before interpreting it.
 
-#### 13B. Detect Lightsaber Orientation
+#### 13B. Orientation Calibration
 
 Use the MPU6050 accelerometer to estimate which way the lightsaber is pointing.
 This builds on the raw values by mapping them to simple orientation labels.
-
-### Motion and Sensors
 
 #### 14. Orientation and Acceleration
 
 Print the acceleration values and the current orientation label.
 Students learn how live sensor numbers map to a simple interpreted state.
+
+#### 14B. Movement Calibration
+
+Print the raw gyroscope values and show a simple interpreted rotation state.
+This introduces that gyroscope data measures rotational speed and direction.
 
 #### 15. Detect Movement
 
@@ -438,5 +446,6 @@ If you want to return to the lessons:
 4. Click `Upload`
 
 That upload replaces WLED on the board.
+
 
 

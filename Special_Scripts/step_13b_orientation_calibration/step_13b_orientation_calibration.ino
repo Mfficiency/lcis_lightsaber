@@ -1,4 +1,4 @@
-// STEP 13B: Detect Lightsaber Orientation
+// STEP 13B: Orientation Calibration
 //
 // WIRING DIAGRAM
 // XIAO ESP32-C3 D0  -> MPU6050 SCL
@@ -124,3 +124,4 @@ void printOrientation(float x, float y, float z) {
     Serial.println("Orientation: between directions");
   }
 }
+
