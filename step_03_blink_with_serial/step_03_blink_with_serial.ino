@@ -1,13 +1,13 @@
 // STEP 03: Blink with Serial Messages
 //
 // WIRING DIAGRAM
-// XIAO ESP32-C3 D10 -> 220-330 ohm resistor -> LED anode (+) the long leg
+// XIAO ESP32-C3 D2 -> 220-330 ohm resistor -> LED anode (+) the long leg
 // LED cathode (-) the short leg -> GND
 //
 // Seeed Studio XIAO ESP32-C3 does not have a programmable user LED.
-// Connect an external LED to D10 through a 220-330 ohm resistor, then to GND.
+// Connect an external LED to D2 through a 220-330 ohm resistor, then to GND.
 // 220 ohm is a good default for most standard 3 mm or 5 mm LEDs.
-const int BUTTON_LED_PIN = D10;
+const int BUTTON_LED_PIN = D2;
 
 void setup() {
   pinMode(BUTTON_LED_PIN, OUTPUT);

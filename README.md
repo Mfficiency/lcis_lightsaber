@@ -34,27 +34,28 @@ This progression is designed to introduce programming concepts step by step whil
 			- [9. Led Strip On and Off](#9-blade-on-and-off)
 			- [10. Ignition Animation](#10-ignition-animation)
 			- [11. Shutdown Animation](#11-shutdown-animation)
-			- [12. Brightness Control](#12-brightness-control)
+			- [12. Button Toggles Led Strip On and Off](#12-button-toggles-led-strip-on-and-off)
+			- [13. Brightness Control](#13-brightness-control)
 		- [Motion and Sensors](#motion-and-sensors)
-			- [13. Read Gyroscope Data](#13-read-gyroscope-data)
-			- [14. Detect Movement](#14-detect-movement)
-			- [15. Swing Detection](#15-swing-detection)
-			- [16. Light Flash on Swing](#16-light-flash-on-swing)
-			- [17. Detect Strong Impact](#17-detect-strong-impact)
-			- [18. Clash Flash Effect](#18-clash-flash-effect)
-			- [19. Idle Led Strip Effect](#19-idle-blade-effect)
+			- [14. Read Gyroscope Data](#14-read-gyroscope-data)
+			- [15. Detect Movement](#15-detect-movement)
+			- [16. Swing Detection](#16-swing-detection)
+			- [17. Light Flash on Swing](#17-light-flash-on-swing)
+			- [18. Detect Strong Impact](#18-detect-strong-impact)
+			- [19. Clash Flash Effect](#19-clash-flash-effect)
+			- [20. Idle Led Strip Effect](#20-idle-blade-effect)
 		- [Program Structure](#program-structure)
-			- [20. Introduce Program States](#20-introduce-program-states)
-			- [21. Button Toggles Saber Power](#21-button-toggles-saber-power)
-			- [22. Non-Blocking Timing with Millis](#22-non-blocking-timing-with-millis)
-			- [23. Organize Code into Functions](#23-organize-code-into-functions)
-			- [24. Configuration Section](#24-configuration-section)
+			- [21. Introduce Program States](#21-introduce-program-states)
+			- [22. Button Toggles Saber Power](#22-button-toggles-saber-power)
+			- [23. Non-Blocking Timing with Millis](#23-non-blocking-timing-with-millis)
+			- [24. Organize Code into Functions](#24-organize-code-into-functions)
+			- [25. Configuration Section](#25-configuration-section)
 		- [Sound](#sound)
-			- [25. Buzzer Test](#25-buzzer-test)
-			- [26. Startup Sound](#26-startup-sound)
-			- [27. Swing Sound](#27-swing-sound)
-			- [28. Clash Sound](#28-clash-sound)
-			- [29. Final Integrated Lightsaber](#29-final-integrated-lightsaber)
+			- [26. Buzzer Test](#26-buzzer-test)
+			- [27. Startup Sound](#27-startup-sound)
+			- [28. Swing Sound](#28-swing-sound)
+			- [29. Clash Sound](#29-clash-sound)
+			- [30. Final Integrated Lightsaber](#30-final-integrated-lightsaber)
 	- [Extra's](#extras)
 		- [WLED](#wled)
 			- [What WLED is good for](#what-wled-is-good-for)
@@ -196,24 +197,25 @@ Start at Step 1 and move forward in order:
 - `step_09_blade_on_off`
 - `step_10_ignition_animation`
 - `step_11_shutdown_animation`
-- `step_12_brightness_control`
-- `step_13_read_gyroscope`
-- `step_14_detect_movement`
-- `step_15_swing_detection`
-- `step_16_light_flash_on_swing`
-- `step_17_detect_strong_impact`
-- `step_18_clash_flash_effect`
-- `step_19_idle_blade_effect`
-- `step_20_program_states`
-- `step_21_button_toggle_power`
-- `step_22_non_blocking_millis`
-- `step_23_organize_into_functions`
-- `step_24_configuration_section`
-- `step_25_buzzer_test`
-- `step_26_startup_sound`
-- `step_27_swing_sound`
-- `step_28_clash_sound`
-- `step_29_final_integrated_lightsaber`
+- `step_12_button_toggle_blade`
+- `step_13_brightness_control`
+- `step_14_read_gyroscope`
+- `step_15_detect_movement`
+- `step_16_swing_detection`
+- `step_17_light_flash_on_swing`
+- `step_18_detect_strong_impact`
+- `step_19_clash_flash_effect`
+- `step_20_idle_blade_effect`
+- `step_21_program_states`
+- `step_22_button_toggle_power`
+- `step_23_non_blocking_millis`
+- `step_24_organize_into_functions`
+- `step_25_configuration_section`
+- `step_26_buzzer_test`
+- `step_27_startup_sound`
+- `step_28_swing_sound`
+- `step_29_clash_sound`
+- `step_30_final_integrated_lightsaber`
 
 ### Basics
 
@@ -274,87 +276,92 @@ This introduces animation.
 Reverse the animation from tip to base.
 This shows how changing a loop changes behavior.
 
-#### 12. Brightness Control
+
+#### 12. Button Toggles Led Strip On and Off
+
+Use the button to switch the Led Strip fully on or fully off.
+This connects button input to a persistent output state.
+#### 13. Brightness Control
 
 Use a variable to change the whole Led Strip brightness.
 This makes the sketch easier to tune.
 
 ### Motion and Sensors
 
-#### 13. Read Gyroscope Data
+#### 14. Read Gyroscope Data
 
 Print the X, Y, and Z gyroscope values.
 Students learn that sensors produce live data.
 
-#### 14. Detect Movement
+#### 15. Detect Movement
 
 Use a threshold to decide if the saber is moving.
 
-#### 15. Swing Detection
+#### 16. Swing Detection
 
 When movement is strong enough, trigger a simple reaction.
 This introduces event-based behavior.
 
-#### 16. Light Flash on Swing
+#### 17. Light Flash on Swing
 
 When a swing is detected, flash the Led Strip brighter for a moment.
 
-#### 17. Detect Strong Impact
+#### 18. Detect Strong Impact
 
 Use a bigger threshold to detect a clash.
 
-#### 18. Clash Flash Effect
+#### 19. Clash Flash Effect
 
 When a strong impact is detected, flash the Led Strip white.
 
-#### 19. Idle Led Strip Effect
+#### 20. Idle Led Strip Effect
 
 Add a small flicker while the Led Strip is on.
 This makes it feel more like a real lightsaber.
 
 ### Program Structure
 
-#### 20. Introduce Program States
+#### 21. Introduce Program States
 
 Create states like `OFF`, `TURNING_ON`, and `ON`.
 
-#### 21. Button Toggles Saber Power
+#### 22. Button Toggles Saber Power
 
 Use the button to switch between off and on.
 
-#### 22. Non-Blocking Timing with Millis
+#### 23. Non-Blocking Timing with Millis
 
 Replace some `delay()` calls with `millis()`.
 This helps the saber keep reacting while it runs animations.
 
-#### 23. Organize Code into Functions
+#### 24. Organize Code into Functions
 
 Split the code into smaller functions like `readGyro()` and `updateBlade()`.
 
-#### 24. Configuration Section
+#### 25. Configuration Section
 
 Move important settings to the top of the file.
 This makes the sketch easier to adjust.
 
 ### Sound
 
-#### 25. Buzzer Test
+#### 26. Buzzer Test
 
 Play one simple tone on the buzzer.
 
-#### 26. Startup Sound
+#### 27. Startup Sound
 
 Play a short tone pattern when the Led Strip turns on.
 
-#### 27. Swing Sound
+#### 28. Swing Sound
 
 Play a short sound when the saber swings.
 
-#### 28. Clash Sound
+#### 29. Clash Sound
 
 Play a sharper sound for a clash.
 
-#### 29. Final Integrated Lightsaber
+#### 30. Final Integrated Lightsaber
 
 Combine button control, Led Strip animation, motion detection, and sound into one full lightsaber project.
 

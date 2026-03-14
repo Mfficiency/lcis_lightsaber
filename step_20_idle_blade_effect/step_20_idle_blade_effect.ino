@@ -1,9 +1,4 @@
-// STEP 07: Turn On the Entire Strip
-//
-// WIRING DIAGRAM
-// XIAO ESP32-C3 D9 -> NeoPixel DIN
-// XIAO ESP32-C3 5V/VBUS -> NeoPixel 5V
-// XIAO ESP32-C3 GND -> NeoPixel GND
+// STEP 20: Idle Led Strip Effect
 
 #include <Adafruit_NeoPixel.h>
 
@@ -21,14 +16,19 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
 void setup() {
   Serial.begin(115200);
   strip.begin();
-
-  for (int i = 0; i < LED_COUNT; i++) {
-    strip.setPixelColor(i, strip.Color(0, 0, 255));
-  }
-
-  strip.show();
-  Serial.println("Led Strip ON");
+  randomSeed(micros());
+  Serial.println("Idle Led Strip effect running.");
 }
 
 void loop() {
+  int baseBlue = 160;
+  int flicker = random(-20, 21);
+  int finalBlue = constrain(baseBlue + flicker, 80, 255);
+
+  for (int i = 0; i < LED_COUNT; i++) {
+    strip.setPixelColor(i, strip.Color(0, 0, finalBlue));
+  }
+
+  strip.show();
+  delay(60);
 }

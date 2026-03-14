@@ -1,4 +1,4 @@
-// STEP 10: Ignition Animation
+// STEP 13: Brightness Control
 //
 // WIRING DIAGRAM
 // XIAO ESP32-C3 D9 -> NeoPixel DIN
@@ -15,32 +15,26 @@ const int LED_STRIP_PIN = 2;
 const int LED_STRIP_PIN = D9;
 #endif
 const int LED_COUNT = 60;
+const int BRIGHTNESS = 80;
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200);
   strip.begin();
-  strip.clear();
-  strip.show();
-  Serial.println("Ignition demo ready.");
+  strip.setBrightness(BRIGHTNESS);
+  turnBladeOn();
+  Serial.print("Led Strip ON at brightness ");
+  Serial.println(BRIGHTNESS);
 }
 
 void loop() {
-  Serial.println("Ignition start");
-  igniteBlade();
-  Serial.println("Led Strip fully ON");
-  delay(1000);
-  strip.clear();
-  strip.show();
-  Serial.println("Led Strip cleared");
-  delay(1000);
 }
 
-void igniteBlade() {
+void turnBladeOn() {
   for (int i = 0; i < LED_COUNT; i++) {
     strip.setPixelColor(i, strip.Color(0, 0, 255));
-    strip.show();
-    delay(30);
   }
+
+  strip.show();
 }
