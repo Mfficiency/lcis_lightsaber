@@ -18,44 +18,43 @@ This progression is designed to introduce programming concepts step by step whil
 		- [6. Install the libraries](#6-install-the-libraries)
 		- [7. Test uploading](#7-test-uploading)
 	- [Wiring Notes](#wiring-notes)
-		- [Important note for Step 3 and Step 4](#important-note-for-step-3-and-step-4)
+		- [Important note for Step 3](#important-note-for-step-3)
 	- [Shared Pin Plan](#shared-pin-plan)
 	- [The Steps](#the-steps)
 		- [Basics](#basics)
 			- [1. Empty Sketch](#1-empty-sketch)
 			- [2. Serial Hello World](#2-serial-hello-world)
-			- [3. Blink an LED](#3-blink-an-led)
-			- [4. Blink with Serial Messages](#4-blink-with-serial-messages)
-			- [5. Read a Button](#5-read-a-button)
-			- [6. Button Controls an LED](#6-button-controls-an-led)
+			- [3. Blink with Serial Messages](#3-blink-with-serial-messages)
+			- [4. Read a Button](#4-read-a-button)
+			- [5. Button Controls an LED](#5-button-controls-an-led)
 		- [LED Blade](#led-blade)
-			- [7. Turn On One Pixel of the LED Strip](#7-turn-on-one-pixel-of-the-led-strip)
-			- [8. Turn On the Entire Strip](#8-turn-on-the-entire-strip)
-			- [9. Change Blade Color](#9-change-blade-color)
-			- [10. Blade On and Off](#10-blade-on-and-off)
-			- [11. Ignition Animation](#11-ignition-animation)
-			- [12. Shutdown Animation](#12-shutdown-animation)
-			- [13. Brightness Control](#13-brightness-control)
+			- [6. Turn On One Pixel of the LED Strip](#6-turn-on-one-pixel-of-the-led-strip)
+			- [7. Turn On the Entire Strip](#7-turn-on-the-entire-strip)
+			- [8. Change Led Strip Color](#8-change-blade-color)
+			- [9. Led Strip On and Off](#9-blade-on-and-off)
+			- [10. Ignition Animation](#10-ignition-animation)
+			- [11. Shutdown Animation](#11-shutdown-animation)
+			- [12. Brightness Control](#12-brightness-control)
 		- [Motion and Sensors](#motion-and-sensors)
-			- [14. Read Gyroscope Data](#14-read-gyroscope-data)
-			- [15. Detect Movement](#15-detect-movement)
-			- [16. Swing Detection](#16-swing-detection)
-			- [17. Light Flash on Swing](#17-light-flash-on-swing)
-			- [18. Detect Strong Impact](#18-detect-strong-impact)
-			- [19. Clash Flash Effect](#19-clash-flash-effect)
-			- [20. Idle Blade Effect](#20-idle-blade-effect)
+			- [13. Read Gyroscope Data](#13-read-gyroscope-data)
+			- [14. Detect Movement](#14-detect-movement)
+			- [15. Swing Detection](#15-swing-detection)
+			- [16. Light Flash on Swing](#16-light-flash-on-swing)
+			- [17. Detect Strong Impact](#17-detect-strong-impact)
+			- [18. Clash Flash Effect](#18-clash-flash-effect)
+			- [19. Idle Led Strip Effect](#19-idle-blade-effect)
 		- [Program Structure](#program-structure)
-			- [21. Introduce Program States](#21-introduce-program-states)
-			- [22. Button Toggles Saber Power](#22-button-toggles-saber-power)
-			- [23. Non-Blocking Timing with Millis](#23-non-blocking-timing-with-millis)
-			- [24. Organize Code into Functions](#24-organize-code-into-functions)
-			- [25. Configuration Section](#25-configuration-section)
+			- [20. Introduce Program States](#20-introduce-program-states)
+			- [21. Button Toggles Saber Power](#21-button-toggles-saber-power)
+			- [22. Non-Blocking Timing with Millis](#22-non-blocking-timing-with-millis)
+			- [23. Organize Code into Functions](#23-organize-code-into-functions)
+			- [24. Configuration Section](#24-configuration-section)
 		- [Sound](#sound)
-			- [26. Buzzer Test](#26-buzzer-test)
-			- [27. Startup Sound](#27-startup-sound)
-			- [28. Swing Sound](#28-swing-sound)
-			- [29. Clash Sound](#29-clash-sound)
-			- [30. Final Integrated Lightsaber](#30-final-integrated-lightsaber)
+			- [25. Buzzer Test](#25-buzzer-test)
+			- [26. Startup Sound](#26-startup-sound)
+			- [27. Swing Sound](#27-swing-sound)
+			- [28. Clash Sound](#28-clash-sound)
+			- [29. Final Integrated Lightsaber](#29-final-integrated-lightsaber)
 	- [Extra's](#extras)
 		- [WLED](#wled)
 			- [What WLED is good for](#what-wled-is-good-for)
@@ -152,11 +151,11 @@ If it uploads, your board and Arduino IDE are working.
 
 ## Wiring Notes
 
-### Important note for Step 3 and Step 4
+### Important note for Step 3
 
 The Seeed Studio XIAO ESP32-C3 does not use a normal built-in user LED for these beginner blink lessons.
 
-For `step_03_blink_led` and `step_04_blink_with_serial`, use an external LED:
+For `step_03_blink_with_serial`, use an external LED:
 
 - Connect `D10` to a `220-330 ohm` resistor
 - Connect the resistor to the long leg of the LED
@@ -168,7 +167,7 @@ For `step_03_blink_led` and `step_04_blink_with_serial`, use an external LED:
 
 These sketches mostly use the same pins so students do not have to relearn the wiring each time.
 
-- Single practice LED for step 3 and 4: `D10`
+- Single practice LED for step 3: `D10`
 - LED strip data pin: `D9` on XIAO ESP32-C3, `GPIO2` on ESP32-C3 Super Mini
 - Button pin: `D7` on XIAO ESP32-C3, `GPIO0` on ESP32-C3 Super Mini
 - Button LED pin: `D2` on XIAO ESP32-C3, `GPIO7` on ESP32-C3 Super Mini
@@ -188,34 +187,33 @@ Start at Step 1 and move forward in order:
 
 - `step_01_empty_sketch`
 - `step_02_serial_hello_world`
-- `step_03_blink_led`
-- `step_04_blink_with_serial`
-- `step_05_read_button`
-- `step_06_button_controls_led`
-- `step_07_one_pixel`
-- `step_08_full_strip`
-- `step_09_change_blade_color`
-- `step_10_blade_on_off`
-- `step_11_ignition_animation`
-- `step_12_shutdown_animation`
-- `step_13_brightness_control`
-- `step_14_read_gyroscope`
-- `step_15_detect_movement`
-- `step_16_swing_detection`
-- `step_17_light_flash_on_swing`
-- `step_18_detect_strong_impact`
-- `step_19_clash_flash_effect`
-- `step_20_idle_blade_effect`
-- `step_21_program_states`
-- `step_22_button_toggle_power`
-- `step_23_non_blocking_millis`
-- `step_24_organize_into_functions`
-- `step_25_configuration_section`
-- `step_26_buzzer_test`
-- `step_27_startup_sound`
-- `step_28_swing_sound`
-- `step_29_clash_sound`
-- `step_30_final_integrated_lightsaber`
+- `step_03_blink_with_serial`
+- `step_04_read_button`
+- `step_05_button_controls_led`
+- `step_06_one_pixel`
+- `step_07_full_strip`
+- `step_08_change_blade_color`
+- `step_09_blade_on_off`
+- `step_10_ignition_animation`
+- `step_11_shutdown_animation`
+- `step_12_brightness_control`
+- `step_13_read_gyroscope`
+- `step_14_detect_movement`
+- `step_15_swing_detection`
+- `step_16_light_flash_on_swing`
+- `step_17_detect_strong_impact`
+- `step_18_clash_flash_effect`
+- `step_19_idle_blade_effect`
+- `step_20_program_states`
+- `step_21_button_toggle_power`
+- `step_22_non_blocking_millis`
+- `step_23_organize_into_functions`
+- `step_24_configuration_section`
+- `step_25_buzzer_test`
+- `step_26_startup_sound`
+- `step_27_swing_sound`
+- `step_28_clash_sound`
+- `step_29_final_integrated_lightsaber`
 
 ### Basics
 
@@ -229,141 +227,136 @@ The goal is to make sure the board is connected and code can be uploaded.
 Print a short message to the Serial Monitor every second.
 This shows how the board can send messages back to the computer.
 
-#### 3. Blink an LED
-
-Blink one external LED on and off using `delay()`.
-This is the first visible output.
-
-#### 4. Blink with Serial Messages
+#### 3. Blink with Serial Messages
 
 Blink the LED while printing `ON` and `OFF` in the Serial Monitor.
 This connects the code to what students can see.
 
-#### 5. Read a Button
+#### 4. Read a Button
 
 Connect a button and print whether it is pressed or not.
 Students learn how the board reads input.
 
-#### 6. Button Controls an LED
+#### 5. Button Controls an LED
 
 Pressing the button turns the LED on and releasing it turns it off.
 This introduces simple `if` statements.
 
 ### LED Blade
 
-#### 7. Turn On One Pixel of the LED Strip
+#### 6. Turn On One Pixel of the LED Strip
 
 Initialize the LED strip library and light one pixel.
 Students learn that each LED has its own number.
 
-#### 8. Turn On the Entire Strip
+#### 7. Turn On the Entire Strip
 
 Use a loop to set every LED to the same color.
 This introduces loops.
 
-#### 9. Change Blade Color
+#### 8. Change Led Strip Color
 
 Change the RGB values to make different colors.
 Students learn how digital color works.
 
-#### 10. Blade On and Off
+#### 9. Led Strip On and Off
 
 Create functions that turn the strip on and off.
 This introduces reusable code.
 
-#### 11. Ignition Animation
+#### 10. Ignition Animation
 
-Light the blade one LED at a time from base to tip.
+Light the Led Strip one LED at a time from base to tip.
 This introduces animation.
 
-#### 12. Shutdown Animation
+#### 11. Shutdown Animation
 
 Reverse the animation from tip to base.
 This shows how changing a loop changes behavior.
 
-#### 13. Brightness Control
+#### 12. Brightness Control
 
-Use a variable to change the whole blade brightness.
+Use a variable to change the whole Led Strip brightness.
 This makes the sketch easier to tune.
 
 ### Motion and Sensors
 
-#### 14. Read Gyroscope Data
+#### 13. Read Gyroscope Data
 
 Print the X, Y, and Z gyroscope values.
 Students learn that sensors produce live data.
 
-#### 15. Detect Movement
+#### 14. Detect Movement
 
 Use a threshold to decide if the saber is moving.
 
-#### 16. Swing Detection
+#### 15. Swing Detection
 
 When movement is strong enough, trigger a simple reaction.
 This introduces event-based behavior.
 
-#### 17. Light Flash on Swing
+#### 16. Light Flash on Swing
 
-When a swing is detected, flash the blade brighter for a moment.
+When a swing is detected, flash the Led Strip brighter for a moment.
 
-#### 18. Detect Strong Impact
+#### 17. Detect Strong Impact
 
 Use a bigger threshold to detect a clash.
 
-#### 19. Clash Flash Effect
+#### 18. Clash Flash Effect
 
-When a strong impact is detected, flash the blade white.
+When a strong impact is detected, flash the Led Strip white.
 
-#### 20. Idle Blade Effect
+#### 19. Idle Led Strip Effect
 
-Add a small flicker while the blade is on.
+Add a small flicker while the Led Strip is on.
 This makes it feel more like a real lightsaber.
 
 ### Program Structure
 
-#### 21. Introduce Program States
+#### 20. Introduce Program States
 
 Create states like `OFF`, `TURNING_ON`, and `ON`.
 
-#### 22. Button Toggles Saber Power
+#### 21. Button Toggles Saber Power
 
 Use the button to switch between off and on.
 
-#### 23. Non-Blocking Timing with Millis
+#### 22. Non-Blocking Timing with Millis
 
 Replace some `delay()` calls with `millis()`.
 This helps the saber keep reacting while it runs animations.
 
-#### 24. Organize Code into Functions
+#### 23. Organize Code into Functions
 
 Split the code into smaller functions like `readGyro()` and `updateBlade()`.
 
-#### 25. Configuration Section
+#### 24. Configuration Section
 
 Move important settings to the top of the file.
 This makes the sketch easier to adjust.
 
 ### Sound
 
-#### 26. Buzzer Test
+#### 25. Buzzer Test
 
 Play one simple tone on the buzzer.
 
-#### 27. Startup Sound
+#### 26. Startup Sound
 
-Play a short tone pattern when the blade turns on.
+Play a short tone pattern when the Led Strip turns on.
 
-#### 28. Swing Sound
+#### 27. Swing Sound
 
 Play a short sound when the saber swings.
 
-#### 29. Clash Sound
+#### 28. Clash Sound
 
 Play a sharper sound for a clash.
 
-#### 30. Final Integrated Lightsaber
+#### 29. Final Integrated Lightsaber
 
-Combine button control, blade animation, motion detection, and sound into one full lightsaber project.
+Combine button control, Led Strip animation, motion detection, and sound into one full lightsaber project.
 
 ## Extra's
 
@@ -377,7 +370,7 @@ It gives you a web interface, colors, effects, playlists, and brightness control
 Use WLED if you want to:
 
 - test that your LED strip and power wiring work
-- try blade colors and animations quickly
+- try Led Strip colors and animations quickly
 - control the saber LEDs from a phone or browser
 
 Use the sketches in this repo if you want to:
@@ -412,12 +405,12 @@ After a successful flash:
 2. Use password `wled1234`
 3. Open `http://4.3.2.1` in a browser
 4. Open `Config > LED Preferences`
-5. Set the LED type to match your blade strip, such as `WS281x`
+5. Set the LED type to match your Led Strip strip, such as `WS281x`
 6. Set the data pin to `GPIO2`
 7. Set the LED count to match your blade, such as `60`
 8. Save and reboot if asked
 
-For this repo's current wiring, the physical XIAO pin label for the blade data line is `D0`, which maps to `GPIO2` in WLED.
+For this repo's current wiring, the physical XIAO pin label for the Led Strip data line is `D0`, which maps to `GPIO2` in WLED.
 
 WLED can drive the LED strip, but it does not automatically use the button, gyroscope, and buzzer logic from these lesson sketches.
 
