@@ -56,6 +56,13 @@ This progression is designed to introduce programming concepts step by step whil
 			- [28. Swing Sound](#28-swing-sound)
 			- [29. Clash Sound](#29-clash-sound)
 			- [30. Final Integrated Lightsaber](#30-final-integrated-lightsaber)
+	- [Extra's](#extras)
+		- [WLED](#wled)
+			- [What WLED is good for](#what-wled-is-good-for)
+			- [Important note for the XIAO ESP32-C3](#important-note-for-the-xiao-esp32-c3)
+			- [Flash WLED](#flash-wled)
+			- [Connect to WLED and configure the strip](#connect-to-wled-and-configure-the-strip)
+			- [Go back to Arduino later](#go-back-to-arduino-later)
 
 
 ## Before You Start
@@ -352,3 +359,70 @@ Play a sharper sound for a clash.
 #### 30. Final Integrated Lightsaber
 
 Combine button control, blade animation, motion detection, and sound into one full lightsaber project.
+
+## Extra's
+
+### WLED
+
+WLED is a ready-made LED controller firmware for ESP boards.
+It gives you a web interface, colors, effects, playlists, and brightness control without writing Arduino code.
+
+#### What WLED is good for
+
+Use WLED if you want to:
+
+- test that your LED strip and power wiring work
+- try blade colors and animations quickly
+- control the saber LEDs from a phone or browser
+
+Use the sketches in this repo if you want to:
+
+- learn programming step by step
+- read the button and gyroscope yourself
+- build your own lightsaber logic in code
+
+#### Important note for the XIAO ESP32-C3
+
+WLED supports ESP32 boards, but ESP32-C3 support is still considered experimental.
+That means it may work well for testing or demos, but it is not the safest choice for a classroom build that must behave the same on every board.
+
+Also note that WLED and the Arduino sketches in this repo are different firmware.
+Uploading WLED replaces the sketch currently on the board until you upload an Arduino sketch again.
+
+#### Flash WLED
+
+1. Disconnect extra jumper wires if your setup is unstable during flashing.
+2. Plug the XIAO ESP32-C3 into your computer with USB.
+3. Try the WLED web installer first.
+4. If the web installer does not work, use the current WLED ESP32 release binary and flash it with `esptool` or an ESP flash tool.
+5. After flashing, reboot the board.
+
+If the flasher pauses on `Connecting...`, hold the board's boot button while flashing starts.
+
+#### Connect to WLED and configure the strip
+
+After a successful flash:
+
+1. Join the Wi-Fi network `WLED-AP`
+2. Use password `wled1234`
+3. Open `http://4.3.2.1` in a browser
+4. Open `Config > LED Preferences`
+5. Set the LED type to match your blade strip, such as `WS281x`
+6. Set the data pin to `GPIO2`
+7. Set the LED count to match your blade, such as `60`
+8. Save and reboot if asked
+
+For this repo's current wiring, the physical XIAO pin label for the blade data line is `D0`, which maps to `GPIO2` in WLED.
+
+WLED can drive the LED strip, but it does not automatically use the button, gyroscope, and buzzer logic from these lesson sketches.
+
+#### Go back to Arduino later
+
+If you want to return to the lessons:
+
+1. Open Arduino IDE
+2. Select the XIAO ESP32-C3 board and correct port
+3. Open any lesson sketch from this repo
+4. Click `Upload`
+
+That upload replaces WLED on the board.
