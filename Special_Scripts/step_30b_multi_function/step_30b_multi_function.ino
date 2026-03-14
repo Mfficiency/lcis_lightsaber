@@ -498,9 +498,16 @@ void updateCountMode() {
     return;
   }
 
-  strip.clear();
+  showCountModeIdle();
   for (int i = 0; i < countModeLitCount; i++) {
-    strip.setPixelColor(i, strip.Color(bladeRed, bladeGreen, bladeBlue, bladeWhite));
+    uint32_t baseColor = strip.getPixelColor(i);
+    uint8_t redValue = static_cast<uint8_t>((baseColor >> 24) & 0xFF);
+    uint8_t greenValue = static_cast<uint8_t>((baseColor >> 16) & 0xFF);
+    uint8_t blueValue = static_cast<uint8_t>((baseColor >> 8) & 0xFF);
+    uint8_t whiteValue = static_cast<uint8_t>(baseColor & 0xFF);
+
+    whiteValue = min(255, whiteValue + 5);
+    strip.setPixelColor(i, strip.Color(redValue, greenValue, blueValue, whiteValue));
   }
   strip.show();
 }
