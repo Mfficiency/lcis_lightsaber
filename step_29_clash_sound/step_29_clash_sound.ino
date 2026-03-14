@@ -11,7 +11,7 @@ const int BUZZER_PIN = 10;
 const int GYRO_SCL_PIN = 5;
 const int GYRO_SDA_PIN = 4;
 #else
-const int BUZZER_PIN = D4;
+const int BUZZER_PIN = D5;
 const int GYRO_SCL_PIN = D0;
 const int GYRO_SDA_PIN = D10;
 #endif

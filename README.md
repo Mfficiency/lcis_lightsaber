@@ -172,7 +172,7 @@ These sketches mostly use the same pins so students do not have to relearn the w
 - LED strip data pin: `D8` on XIAO ESP32-C3, `GPIO2` on ESP32-C3 Super Mini
 - Button pin: `D7` on XIAO ESP32-C3, `GPIO0` on ESP32-C3 Super Mini
 - Button LED pin: `D2` on XIAO ESP32-C3, `GPIO7` on ESP32-C3 Super Mini
-- Buzzer pin: `D4` on XIAO ESP32-C3, `GPIO10` on ESP32-C3 Super Mini
+- Buzzer pin: `D5` on XIAO ESP32-C3, `GPIO10` on ESP32-C3 Super Mini
 - Gyroscope SCL pin: `D0` on XIAO ESP32-C3, `GPIO5` on ESP32-C3 Super Mini
 - Gyroscope SDA pin: `D10` on XIAO ESP32-C3, `GPIO4` on ESP32-C3 Super Mini
 

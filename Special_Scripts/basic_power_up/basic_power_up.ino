@@ -20,7 +20,7 @@ const int BUZZER_PIN = 10;           // buzzer for end beep
 #define LED_STRIP_PIN        D10
 const int BUTTON_PIN = D7;           // button to GND, use internal pullup
 const int INT_BUTTON_LED_PIN = D2;          // button LED
-const int BUZZER_PIN = D4;           // buzzer for end beep
+const int BUZZER_PIN = D5;           // buzzer for end beep
 
 #endif
 #define LED_COUNT      60
