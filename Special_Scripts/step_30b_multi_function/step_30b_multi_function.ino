@@ -91,6 +91,13 @@ enum CountModeState {
   COUNTING_DOWN_STATE
 };
 
+enum RainbowPaletteMode {
+  RAINBOW_ALL_COLORS,
+  RAINBOW_REDDISH,
+  RAINBOW_BLUISH,
+  RAINBOW_GREENISH
+};
+
 enum AxisName {
   AXIS_X,
   AXIS_Y,
@@ -130,6 +137,8 @@ float smoothedNightLightWhite = 5.0;
 float smoothedNightLightLitCount = LED_COUNT;
 float rainbowTemperature = 0.5;
 uint16_t rainbowOffset = 0;
+RainbowPaletteMode rainbowPaletteMode = RAINBOW_ALL_COLORS;
+unsigned long lastRainbowSwingTime = 0;
 
 Adafruit_MPU6050 mpu;
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
@@ -166,6 +175,8 @@ void showCountModeIdle();
 void playCountdownFinishedSound();
 uint32_t colorWheel(byte wheelPos, int whiteOffset);
 void showSpiritLevel(float saberRight);
+void cycleRainbowPalette();
+byte getRainbowPaletteWheelPos(byte wheelPos);
 float clamp01(float value);
 float getMappedAxis(float x, float y, float z, AxisName axisName, int axisSign);
 void readOrientation(float& saberRight, float& saberTip, float& saberUp);
@@ -306,6 +317,7 @@ void cycleMode() {
   countModeLitCount = 0;
   countHoldActive = false;
   countDownFinishedSoundPlayed = false;
+  lastRainbowSwingTime = 0;
 
   if (currentState != ON_STATE) {
     return;
@@ -604,6 +616,17 @@ void updateRainbowMode() {
   float saberUp = 0.0;
   readOrientation(saberRight, saberTip, saberUp);
 
+  sensors_event_t accelEvent;
+  sensors_event_t gyroEvent;
+  sensors_event_t tempEvent;
+  mpu.getEvent(&accelEvent, &gyroEvent, &tempEvent);
+  float movement = fabs(gyroEvent.gyro.x) + fabs(gyroEvent.gyro.y) + fabs(gyroEvent.gyro.z);
+
+  if (movement > SWING_THRESHOLD && now - lastRainbowSwingTime > 400) {
+    cycleRainbowPalette();
+    lastRainbowSwingTime = now;
+  }
+
   lastRainbowUpdate = now;
   rainbowOffset++;
   rainbowTemperature = clamp01((saberRight + GRAVITY_REFERENCE) / (2.0 * GRAVITY_REFERENCE));
@@ -613,7 +636,7 @@ void updateRainbowMode() {
 
   for (int i = 0; i < LED_COUNT; i++) {
     byte wheelPos = static_cast<byte>((i * 256 / LED_COUNT + rainbowOffset) & 0xFF);
-    uint32_t colorValue = colorWheel(wheelPos, whiteOffset + pulseWhite);
+    uint32_t colorValue = colorWheel(getRainbowPaletteWheelPos(wheelPos), whiteOffset + pulseWhite);
     strip.setPixelColor(i, colorValue);
   }
 
@@ -824,6 +847,36 @@ void showSpiritLevel(float saberRight) {
   strip.setPixelColor(leftInner, strip.Color(0, 120, 0, 0));
   strip.setPixelColor(rightInner, strip.Color(0, 120, 0, 0));
   strip.setPixelColor(rightOuter, strip.Color(0, 120, 0, 0));
+}
+
+void cycleRainbowPalette() {
+  rainbowPaletteMode = static_cast<RainbowPaletteMode>((rainbowPaletteMode + 1) % 4);
+
+  if (rainbowPaletteMode == RAINBOW_ALL_COLORS) {
+    Serial.println("Rainbow palette -> all colors");
+  } else if (rainbowPaletteMode == RAINBOW_REDDISH) {
+    Serial.println("Rainbow palette -> reddish");
+  } else if (rainbowPaletteMode == RAINBOW_BLUISH) {
+    Serial.println("Rainbow palette -> blueish");
+  } else {
+    Serial.println("Rainbow palette -> greenish");
+  }
+}
+
+byte getRainbowPaletteWheelPos(byte wheelPos) {
+  if (rainbowPaletteMode == RAINBOW_ALL_COLORS) {
+    return wheelPos;
+  }
+
+  if (rainbowPaletteMode == RAINBOW_REDDISH) {
+    return static_cast<byte>((wheelPos / 3) + 170);
+  }
+
+  if (rainbowPaletteMode == RAINBOW_BLUISH) {
+    return static_cast<byte>((wheelPos / 3) + 85);
+  }
+
+  return static_cast<byte>(wheelPos / 3);
 }
 
 float clamp01(float value) {
