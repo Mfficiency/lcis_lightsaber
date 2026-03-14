@@ -42,8 +42,14 @@ const int GYRO_SDA_PIN = D10;
 #endif
 
 const int LED_COUNT = 60;
-const int SAFE_BRIGHTNESS = 25;
+const int SAFE_BRIGHTNESS = 100;
 const int SHUTDOWN_PEAK_BRIGHTNESS = 60;
+const int SABER_BRIGHTNESS = 80;
+const int COLOR_CHOOSE_BRIGHTNESS = 80;
+const int NIGHTLIGHT_BRIGHTNESS = 35;
+const int COUNT_MODE_BRIGHTNESS = 70;
+const int RAINBOW_BRIGHTNESS = 90;
+const int OFF_MODE_BRIGHTNESS = 0;
 const unsigned long ANIMATION_INTERVAL_MS = 25;
 const unsigned long IDLE_INTERVAL_MS = 60;
 const unsigned long ORIENTATION_UPDATE_MS = 120;
@@ -51,6 +57,7 @@ const unsigned long DOUBLE_PRESS_MS = 350;
 const unsigned long COUNT_HOLD_START_MS = 250;
 const unsigned long COUNT_UP_INTERVAL_MS = 500;
 const unsigned long COUNT_DOWN_INTERVAL_MS = 2000;
+const unsigned long RAINBOW_UPDATE_MS = 40;
 const float SWING_THRESHOLD = 4.0;
 const float CLASH_THRESHOLD = 10.0;
 const float GRAVITY_REFERENCE = 9.8;
@@ -67,7 +74,9 @@ enum SaberMode {
   DEFAULT_MODE,
   COLOR_CHOOSE_MODE,
   NIGHTLIGHT_MODE,
-  COUNT_MODE
+  COUNT_MODE,
+  RAINBOW_MODE,
+  OFF_MODE
 };
 
 enum CountModeState {
@@ -105,12 +114,16 @@ unsigned long lastAnimationUpdate = 0;
 unsigned long lastIdleUpdate = 0;
 unsigned long lastOrientationUpdate = 0;
 unsigned long lastCountModeUpdate = 0;
+unsigned long lastRainbowUpdate = 0;
 unsigned long buttonPressStart = 0;
 unsigned long lastReleaseTime = 0;
 bool pendingShortPress = false;
 bool countHoldActive = false;
+bool countDownFinishedSoundPlayed = false;
 float smoothedNightLightWhite = 5.0;
 float smoothedNightLightLitCount = LED_COUNT;
+float rainbowTemperature = 0.5;
+uint16_t rainbowOffset = 0;
 
 Adafruit_MPU6050 mpu;
 Adafruit_NeoPixel strip(LED_COUNT, LED_STRIP_PIN, NEO_GRBW + NEO_KHZ800);
@@ -121,6 +134,7 @@ void handleShortPress();
 void handleDoublePress();
 void cycleMode();
 void showCurrentMode();
+void applyModeBrightness();
 void updateStateMachine();
 void startTurnOn();
 void startTurnOff();
@@ -128,6 +142,7 @@ void updateDefaultMode();
 void updateColorChooseMode();
 void updateNightLightMode();
 void updateCountMode();
+void updateRainbowMode();
 void handleMotionEffects();
 void swingEffect();
 void clashEffect();
@@ -141,6 +156,8 @@ void fillCurrentBladeColor();
 void showClashSparkEffect();
 void showNightLightBlade(int whiteValue, int litCount);
 void showCountModeIdle();
+void playCountdownFinishedSound();
+uint32_t colorWheel(byte wheelPos, int whiteOffset);
 float clamp01(float value);
 float getMappedAxis(float x, float y, float z, AxisName axisName, int axisSign);
 void readOrientation(float& saberRight, float& saberTip, float& saberUp);
@@ -183,8 +200,13 @@ void loop() {
     updateColorChooseMode();
   } else if (currentMode == NIGHTLIGHT_MODE) {
     updateNightLightMode();
-  } else {
+  } else if (currentMode == COUNT_MODE) {
     updateCountMode();
+  } else if (currentMode == RAINBOW_MODE) {
+    updateRainbowMode();
+  } else {
+    strip.clear();
+    strip.show();
   }
 }
 
@@ -261,16 +283,19 @@ void handleDoublePress() {
 }
 
 void cycleMode() {
-  currentMode = static_cast<SaberMode>((currentMode + 1) % 4);
+  currentMode = static_cast<SaberMode>((currentMode + 1) % 6);
   playModeCycleSound();
   showCurrentMode();
+  applyModeBrightness();
   lastIdleUpdate = 0;
   lastOrientationUpdate = 0;
+  lastRainbowUpdate = 0;
   smoothedNightLightWhite = 5.0;
   smoothedNightLightLitCount = LED_COUNT;
   countModeState = COUNT_IDLE_STATE;
   countModeLitCount = 0;
   countHoldActive = false;
+  countDownFinishedSoundPlayed = false;
 
   if (currentState != ON_STATE) {
     return;
@@ -282,6 +307,9 @@ void cycleMode() {
   } else if (currentMode == COUNT_MODE) {
     showCountModeIdle();
     strip.show();
+  } else if (currentMode == OFF_MODE) {
+    strip.clear();
+    strip.show();
   }
 }
 
@@ -292,8 +320,28 @@ void showCurrentMode() {
     Serial.println("Mode -> Choose color with orientation");
   } else if (currentMode == NIGHTLIGHT_MODE) {
     Serial.println("Mode -> Nightlight");
-  } else {
+  } else if (currentMode == COUNT_MODE) {
     Serial.println("Mode -> Count mode");
+  } else if (currentMode == RAINBOW_MODE) {
+    Serial.println("Mode -> Sweeping rainbow");
+  } else {
+    Serial.println("Mode -> Off");
+  }
+}
+
+void applyModeBrightness() {
+  if (currentMode == DEFAULT_MODE) {
+    strip.setBrightness(SABER_BRIGHTNESS);
+  } else if (currentMode == COLOR_CHOOSE_MODE) {
+    strip.setBrightness(COLOR_CHOOSE_BRIGHTNESS);
+  } else if (currentMode == NIGHTLIGHT_MODE) {
+    strip.setBrightness(NIGHTLIGHT_BRIGHTNESS);
+  } else if (currentMode == COUNT_MODE) {
+    strip.setBrightness(COUNT_MODE_BRIGHTNESS);
+  } else if (currentMode == RAINBOW_MODE) {
+    strip.setBrightness(RAINBOW_BRIGHTNESS);
+  } else {
+    strip.setBrightness(OFF_MODE_BRIGHTNESS);
   }
 }
 
@@ -303,7 +351,7 @@ void startTurnOn() {
   lastAnimationUpdate = 0;
   pendingShortPress = false;
   countHoldActive = false;
-  strip.setBrightness(SAFE_BRIGHTNESS);
+  applyModeBrightness();
   strip.clear();
   strip.show();
   Serial.println("State -> TURNING_ON");
@@ -345,13 +393,18 @@ void updateStateMachine() {
       lastIdleUpdate = 0;
       lastOrientationUpdate = 0;
       lastCountModeUpdate = 0;
+      lastRainbowUpdate = 0;
       countModeLitCount = 0;
       countModeState = COUNT_IDLE_STATE;
+      countDownFinishedSoundPlayed = false;
       smoothedNightLightWhite = 5.0;
       smoothedNightLightLitCount = LED_COUNT;
 
       if (currentMode == COUNT_MODE) {
         showCountModeIdle();
+        strip.show();
+      } else if (currentMode == OFF_MODE) {
+        strip.clear();
         strip.show();
       }
 
@@ -383,12 +436,14 @@ void updateStateMachine() {
       strip.show();
       countModeState = COUNT_IDLE_STATE;
       countModeLitCount = 0;
+      countDownFinishedSoundPlayed = false;
       Serial.println("State -> OFF");
     }
   }
 }
 
 void updateDefaultMode() {
+  applyModeBrightness();
   unsigned long now = millis();
   if (now - lastIdleUpdate < IDLE_INTERVAL_MS) {
     handleMotionEffects();
@@ -403,6 +458,7 @@ void updateDefaultMode() {
 }
 
 void updateColorChooseMode() {
+  applyModeBrightness();
   unsigned long now = millis();
   if (now - lastOrientationUpdate < ORIENTATION_UPDATE_MS) {
     return;
@@ -420,6 +476,7 @@ void updateColorChooseMode() {
 }
 
 void updateNightLightMode() {
+  applyModeBrightness();
   unsigned long now = millis();
   if (now - lastOrientationUpdate < ORIENTATION_UPDATE_MS) {
     return;
@@ -461,6 +518,7 @@ void updateNightLightMode() {
 }
 
 void updateCountMode() {
+  applyModeBrightness();
   unsigned long now = millis();
 
   if (countModeState == COUNT_IDLE_STATE) {
@@ -484,11 +542,16 @@ void updateCountMode() {
     if (countModeLitCount < LED_COUNT) {
       countModeLitCount++;
     }
+    countDownFinishedSoundPlayed = false;
   } else if (countModeState == COUNTING_DOWN_STATE) {
     if (countModeLitCount > 0) {
       countModeLitCount--;
     } else {
       countModeState = COUNT_IDLE_STATE;
+      if (!countDownFinishedSoundPlayed) {
+        playCountdownFinishedSound();
+        countDownFinishedSoundPlayed = true;
+      }
     }
   }
 
@@ -509,6 +572,34 @@ void updateCountMode() {
     whiteValue = min(255, whiteValue + 5);
     strip.setPixelColor(i, strip.Color(redValue, greenValue, blueValue, whiteValue));
   }
+  strip.show();
+}
+
+void updateRainbowMode() {
+  applyModeBrightness();
+  unsigned long now = millis();
+  if (now - lastRainbowUpdate < RAINBOW_UPDATE_MS) {
+    return;
+  }
+
+  float saberRight = 0.0;
+  float saberTip = 0.0;
+  float saberUp = 0.0;
+  readOrientation(saberRight, saberTip, saberUp);
+
+  lastRainbowUpdate = now;
+  rainbowOffset++;
+  rainbowTemperature = clamp01((saberRight + GRAVITY_REFERENCE) / (2.0 * GRAVITY_REFERENCE));
+
+  int whiteOffset = static_cast<int>(rainbowTemperature * 70.0);
+  int pulseWhite = static_cast<int>(20.0 + 35.0 * (0.5 + 0.5 * sin(now / 180.0)));
+
+  for (int i = 0; i < LED_COUNT; i++) {
+    byte wheelPos = static_cast<byte>((i * 256 / LED_COUNT + rainbowOffset) & 0xFF);
+    uint32_t colorValue = colorWheel(wheelPos, whiteOffset + pulseWhite);
+    strip.setPixelColor(i, colorValue);
+  }
+
   strip.show();
 }
 
@@ -654,6 +745,41 @@ void showCountModeIdle() {
   for (int i = 9; i < LED_COUNT; i += 10) {
     strip.setPixelColor(i, strip.Color(15, 2, 0, 0));
   }
+}
+
+void playCountdownFinishedSound() {
+  tone(BUZZER_PIN, 740, 90);
+  delay(120);
+  tone(BUZZER_PIN, 660, 90);
+  delay(120);
+  tone(BUZZER_PIN, 740, 120);
+  delay(150);
+}
+
+uint32_t colorWheel(byte wheelPos, int whiteOffset) {
+  byte scaledPos = 255 - wheelPos;
+  int redValue = 0;
+  int greenValue = 0;
+  int blueValue = 0;
+
+  if (scaledPos < 85) {
+    redValue = 255 - scaledPos * 3;
+    greenValue = 0;
+    blueValue = scaledPos * 3;
+  } else if (scaledPos < 170) {
+    scaledPos -= 85;
+    redValue = 0;
+    greenValue = scaledPos * 3;
+    blueValue = 255 - scaledPos * 3;
+  } else {
+    scaledPos -= 170;
+    redValue = scaledPos * 3;
+    greenValue = 255 - scaledPos * 3;
+    blueValue = 0;
+  }
+
+  int whiteValue = constrain(whiteOffset, 0, 180);
+  return strip.Color(redValue, greenValue, blueValue, whiteValue);
 }
 
 float clamp01(float value) {
