@@ -58,9 +58,9 @@ const int OFF_MODE_BRIGHTNESS = 0;
 const unsigned long ANIMATION_INTERVAL_MS = 25;
 const unsigned long IDLE_INTERVAL_MS = 60;
 const unsigned long ORIENTATION_UPDATE_MS = 120;
-const unsigned long DOUBLE_PRESS_MS = 350;
+const unsigned long DOUBLE_PRESS_MS = 220;
 const unsigned long COUNT_HOLD_START_MS = 250;
-const unsigned long COUNT_UP_INTERVAL_MS = 500;
+const unsigned long COUNT_UP_INTERVAL_MS = 700;
 const unsigned long COUNT_DOWN_INTERVAL_MS = 2000;
 const unsigned long RAINBOW_UPDATE_MS = 40;
 const float SWING_THRESHOLD = 4.0;
@@ -177,6 +177,7 @@ uint32_t colorWheel(byte wheelPos, int whiteOffset);
 void showSpiritLevel(float saberRight);
 void cycleRainbowPalette();
 byte getRainbowPaletteWheelPos(byte wheelPos);
+void getCountModeBaseColor(int pixelIndex, int& redValue, int& greenValue, int& blueValue, int& whiteValue);
 float clamp01(float value);
 float getMappedAxis(float x, float y, float z, AxisName axisName, int axisSign);
 void readOrientation(float& saberRight, float& saberTip, float& saberUp);
@@ -592,12 +593,12 @@ void updateCountMode() {
 
   showCountModeIdle();
   for (int i = 0; i < countModeLitCount; i++) {
-    uint32_t baseColor = strip.getPixelColor(i);
-    uint8_t redValue = static_cast<uint8_t>((baseColor >> 24) & 0xFF);
-    uint8_t greenValue = static_cast<uint8_t>((baseColor >> 16) & 0xFF);
-    uint8_t blueValue = static_cast<uint8_t>((baseColor >> 8) & 0xFF);
-    uint8_t whiteValue = static_cast<uint8_t>(baseColor & 0xFF);
+    int redValue = 0;
+    int greenValue = 0;
+    int blueValue = 0;
+    int whiteValue = 0;
 
+    getCountModeBaseColor(i, redValue, greenValue, blueValue, whiteValue);
     whiteValue = min(255, whiteValue + 5);
     strip.setPixelColor(i, strip.Color(redValue, greenValue, blueValue, whiteValue));
   }
@@ -877,6 +878,23 @@ byte getRainbowPaletteWheelPos(byte wheelPos) {
   }
 
   return static_cast<byte>(wheelPos / 3);
+}
+
+void getCountModeBaseColor(int pixelIndex, int& redValue, int& greenValue, int& blueValue, int& whiteValue) {
+  redValue = 0;
+  greenValue = 0;
+  blueValue = 0;
+  whiteValue = 0;
+
+  if ((pixelIndex + 1) % 10 == 5) {
+    redValue = 5;
+    return;
+  }
+
+  if ((pixelIndex + 1) % 10 == 0) {
+    redValue = 15;
+    greenValue = 2;
+  }
 }
 
 float clamp01(float value) {
