@@ -1098,52 +1098,108 @@ void handleWebRoot() {
     .buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 16px 0; }
     button { border: 0; border-radius: 999px; padding: 12px 14px; font-size: 15px; cursor: pointer; background: #2a82da; color: white; }
     button.alt { background: #384656; }
+    button.small { padding: 8px 12px; font-size: 13px; }
+    button:disabled { background: #5a6470; color: #ced5db; cursor: not-allowed; opacity: .6; }
     label { display: block; margin-top: 18px; font-weight: bold; }
     input[type=range] { width: 100%; }
+    input:disabled { opacity: .45; }
     .status { margin-top: 14px; padding: 12px; background: #0d141b; border-radius: 12px; }
     .value { font-weight: normal; color: #8fd3ff; }
     .small { color: #9fb2c3; font-size: 14px; }
+    .hidden { display: none; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .section-hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="panel">
-    <h1>Lightsaber Control</h1>
-    <div class="small">Connect to the board Wi-Fi and use this page to control power, mode, brightness, and hue.</div>
-    <div class="buttons">
-      <button onclick="sendControl('state=on')">Power On</button>
-      <button class="alt" onclick="sendControl('state=off')">Power Off</button>
+    <div id="mainView">
+      <h1>Lightsaber Control</h1>
+      <div class="small">Connect to the board Wi-Fi and use this page to control power and modes.</div>
+      <div class="buttons">
+        <button id="powerOnButton" onclick="sendControl('state=on')">Power On</button>
+        <button id="powerOffButton" class="alt" onclick="sendControl('state=off')">Power Off</button>
+      </div>
+      <div class="buttons">
+        <button class="mode-button" onclick="sendControl('mode=0')">Default</button>
+        <button class="mode-button" onclick="sendControl('mode=2')">Nightlight</button>
+        <button class="mode-button" onclick="sendControl('mode=3')">Timer</button>
+        <button class="mode-button" onclick="sendControl('mode=4')">Rainbow</button>
+        <button class="mode-button" onclick="sendControl('mode=5')">Level</button>
+        <button id="settingsButton" class="alt" onclick="showSettings()">Settings</button>
+      </div>
+      <div id="timerSection" class="section-hidden">
+        <label for="timerMinutes">Timer Minutes <span id="timerMinutesValue" class="value"></span></label>
+        <input id="timerMinutes" type="number" min="1" max="60" value="5" oninput="document.getElementById('timerMinutesValue').textContent=this.value + ' min'">
+        <div class="buttons">
+          <button class="timer-button" onclick="sendTimerAction('start')">Start</button>
+          <button class="timer-button alt" onclick="sendTimerAction('stop')">Stop</button>
+          <button class="timer-button alt" onclick="sendTimerAction('reset')">Reset</button>
+        </div>
+      </div>
+      <div class="status" id="status">Loading status...</div>
     </div>
-    <div class="buttons">
-      <button onclick="sendControl('mode=0')">Default</button>
-      <button onclick="sendControl('mode=1')">Color</button>
-      <button onclick="sendControl('mode=2')">Nightlight</button>
-      <button onclick="sendControl('mode=3')">Timer</button>
-      <button onclick="sendControl('mode=4')">Rainbow</button>
-      <button onclick="sendControl('mode=5')">Level</button>
-      <button class="alt" onclick="sendControl('mode=6')">LED Off</button>
+    <div id="settingsView" class="hidden">
+      <div class="topbar">
+        <button class="alt" onclick="showMain()">Back</button>
+        <button class="small alt" onclick="showAbout()">About</button>
+      </div>
+      <h1>Settings</h1>
+      <label for="brightness">Master Brightness <span id="brightnessValue" class="value"></span></label>
+      <input id="brightness" type="range" min="0" max="100" value="100" oninput="document.getElementById('brightnessValue').textContent=this.value + '%'">
+      <button id="applyBrightnessButton" class="alt" onclick="sendSlider('brightness', document.getElementById('brightness').value)">Apply Brightness</button>
+      <label for="hue">Master Hue <span id="hueValue" class="value"></span></label>
+      <input id="hue" type="range" min="0" max="359" value="0" oninput="document.getElementById('hueValue').textContent=this.value + ' deg'">
+      <button id="applyHueButton" class="alt" onclick="sendSlider('hue', document.getElementById('hue').value)">Apply Hue</button>
+      <div class="status" id="settingsStatus">Loading status...</div>
     </div>
-    <label for="brightness">Master Brightness <span id="brightnessValue" class="value"></span></label>
-    <input id="brightness" type="range" min="0" max="100" value="100" oninput="document.getElementById('brightnessValue').textContent=this.value + '%'">
-    <button class="alt" onclick="sendSlider('brightness', document.getElementById('brightness').value)">Apply Brightness</button>
-    <label for="hue">Master Hue <span id="hueValue" class="value"></span></label>
-    <input id="hue" type="range" min="0" max="359" value="0" oninput="document.getElementById('hueValue').textContent=this.value + ' deg'">
-    <button class="alt" onclick="sendSlider('hue', document.getElementById('hue').value)">Apply Hue</button>
-    <label for="timerMinutes">Timer Minutes <span id="timerMinutesValue" class="value"></span></label>
-    <input id="timerMinutes" type="number" min="1" max="60" value="5" oninput="document.getElementById('timerMinutesValue').textContent=this.value + ' min'">
-    <div class="buttons">
-      <button onclick="sendTimerAction('start')">Start</button>
-      <button class="alt" onclick="sendTimerAction('stop')">Stop</button>
-      <button class="alt" onclick="sendTimerAction('reset')">Reset</button>
-    </div>
-    <div class="status" id="status">Loading status...</div>
   </div>
   <script>
+    let brightnessDirty = false;
+    let hueDirty = false;
+
+    function showMain() {
+      document.getElementById('mainView').classList.remove('hidden');
+      document.getElementById('settingsView').classList.add('hidden');
+    }
+    function showSettings() {
+      document.getElementById('mainView').classList.add('hidden');
+      document.getElementById('settingsView').classList.remove('hidden');
+    }
+    function showAbout() {
+      window.alert('powered by mfficiency.com');
+    }
+    function setDisabledForSelector(selector, disabled) {
+      document.querySelectorAll(selector).forEach((element) => {
+        element.disabled = disabled;
+      });
+    }
+    function applyPowerState(status) {
+      const isOn = status.state === 'On';
+      const showTimerControls = isOn && status.mode === 'Count';
+      document.getElementById('powerOnButton').disabled = isOn;
+      document.getElementById('powerOffButton').disabled = !isOn;
+      document.getElementById('settingsButton').disabled = !isOn;
+      document.getElementById('timerMinutes').disabled = !isOn;
+      document.getElementById('brightness').disabled = !isOn;
+      document.getElementById('hue').disabled = !isOn;
+      document.getElementById('applyBrightnessButton').disabled = !isOn;
+      document.getElementById('applyHueButton').disabled = !isOn;
+      setDisabledForSelector('.mode-button', !isOn);
+      setDisabledForSelector('.timer-button', !isOn);
+      document.getElementById('timerSection').classList.toggle('section-hidden', !showTimerControls);
+    }
     async function sendControl(query) {
       await fetch('/control?' + query);
       await refreshStatus();
     }
     async function sendSlider(name, value) {
       await fetch('/control?' + name + '=' + encodeURIComponent(value));
+      if (name === 'brightness') {
+        brightnessDirty = false;
+      } else if (name === 'hue') {
+        hueDirty = false;
+      }
       await refreshStatus();
     }
     async function sendTimerAction(action) {
@@ -1154,13 +1210,18 @@ void handleWebRoot() {
     async function refreshStatus() {
       const response = await fetch('/status');
       const status = await response.json();
-      document.getElementById('brightness').value = status.masterBrightness;
-      document.getElementById('hue').value = status.masterHue;
+      applyPowerState(status);
       document.getElementById('timerMinutes').value = status.timerSelectedMinutes;
-      document.getElementById('brightnessValue').textContent = status.masterBrightness + '%';
-      document.getElementById('hueValue').textContent = status.masterHue + ' deg';
       document.getElementById('timerMinutesValue').textContent = status.timerSelectedMinutes + ' min';
-      document.getElementById('status').innerHTML =
+      if (!brightnessDirty) {
+        document.getElementById('brightness').value = status.masterBrightness;
+        document.getElementById('brightnessValue').textContent = status.masterBrightness + '%';
+      }
+      if (!hueDirty) {
+        document.getElementById('hue').value = status.masterHue;
+        document.getElementById('hueValue').textContent = status.masterHue + ' deg';
+      }
+      const statusHtml =
         'State: <span class="value">' + status.state + '</span><br>' +
         'Mode: <span class="value">' + status.mode + '</span><br>' +
         'Brightness: <span class="value">' + status.masterBrightness + '%</span><br>' +
@@ -1168,7 +1229,21 @@ void handleWebRoot() {
         'Timer state: <span class="value">' + status.timerState + '</span><br>' +
         'Timer minutes: <span class="value">' + status.timerSelectedMinutes + '</span><br>' +
         'Minutes remaining: <span class="value">' + status.timerMinutesRemaining + '</span>';
+      document.getElementById('status').innerHTML = statusHtml;
+      document.getElementById('settingsStatus').innerHTML = statusHtml;
     }
+    document.getElementById('brightness').addEventListener('input', () => {
+      brightnessDirty = true;
+    });
+    document.getElementById('brightness').addEventListener('change', () => {
+      brightnessDirty = true;
+    });
+    document.getElementById('hue').addEventListener('input', () => {
+      hueDirty = true;
+    });
+    document.getElementById('hue').addEventListener('change', () => {
+      hueDirty = true;
+    });
     refreshStatus();
     setInterval(refreshStatus, 2000);
   </script>
