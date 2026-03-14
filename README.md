@@ -401,6 +401,14 @@ Use these sketches when something in the hardware setup is unclear, or when the 
 #### Step 30B
 
 Here there are different modes added.
+// MODES
+1. Default lightsaber mode
+2. Color choose mode using orientation
+3. Nightlight mode using orientation
+4. Count mode
+5. Rainbow mode
+6. Spirit level mode
+7. OFF mode (all LEDs off, but still responds to motion and button)
 
 
 ### WLED

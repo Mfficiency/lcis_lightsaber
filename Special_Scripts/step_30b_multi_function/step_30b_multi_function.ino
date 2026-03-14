@@ -19,6 +19,10 @@
 // 2. Color choose mode using orientation
 // 3. Nightlight mode using orientation
 // 4. Count mode
+// 5. Sweeping rainbow
+// 6. Spirit level
+// 7. Off
+
 
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_NeoPixel.h>
@@ -49,6 +53,7 @@ const int COLOR_CHOOSE_BRIGHTNESS = 80;
 const int NIGHTLIGHT_BRIGHTNESS = 35;
 const int COUNT_MODE_BRIGHTNESS = 70;
 const int RAINBOW_BRIGHTNESS = 90;
+const int SPIRIT_LEVEL_BRIGHTNESS = 40;
 const int OFF_MODE_BRIGHTNESS = 0;
 const unsigned long ANIMATION_INTERVAL_MS = 25;
 const unsigned long IDLE_INTERVAL_MS = 60;
@@ -76,6 +81,7 @@ enum SaberMode {
   NIGHTLIGHT_MODE,
   COUNT_MODE,
   RAINBOW_MODE,
+  SPIRIT_LEVEL_MODE,
   OFF_MODE
 };
 
@@ -143,6 +149,7 @@ void updateColorChooseMode();
 void updateNightLightMode();
 void updateCountMode();
 void updateRainbowMode();
+void updateSpiritLevelMode();
 void handleMotionEffects();
 void swingEffect();
 void clashEffect();
@@ -158,6 +165,7 @@ void showNightLightBlade(int whiteValue, int litCount);
 void showCountModeIdle();
 void playCountdownFinishedSound();
 uint32_t colorWheel(byte wheelPos, int whiteOffset);
+void showSpiritLevel(float saberRight);
 float clamp01(float value);
 float getMappedAxis(float x, float y, float z, AxisName axisName, int axisSign);
 void readOrientation(float& saberRight, float& saberTip, float& saberUp);
@@ -204,6 +212,8 @@ void loop() {
     updateCountMode();
   } else if (currentMode == RAINBOW_MODE) {
     updateRainbowMode();
+  } else if (currentMode == SPIRIT_LEVEL_MODE) {
+    updateSpiritLevelMode();
   } else {
     strip.clear();
     strip.show();
@@ -283,7 +293,7 @@ void handleDoublePress() {
 }
 
 void cycleMode() {
-  currentMode = static_cast<SaberMode>((currentMode + 1) % 6);
+  currentMode = static_cast<SaberMode>((currentMode + 1) % 7);
   playModeCycleSound();
   showCurrentMode();
   applyModeBrightness();
@@ -324,6 +334,8 @@ void showCurrentMode() {
     Serial.println("Mode -> Count mode");
   } else if (currentMode == RAINBOW_MODE) {
     Serial.println("Mode -> Sweeping rainbow");
+  } else if (currentMode == SPIRIT_LEVEL_MODE) {
+    Serial.println("Mode -> Spirit level");
   } else {
     Serial.println("Mode -> Off");
   }
@@ -340,6 +352,8 @@ void applyModeBrightness() {
     strip.setBrightness(COUNT_MODE_BRIGHTNESS);
   } else if (currentMode == RAINBOW_MODE) {
     strip.setBrightness(RAINBOW_BRIGHTNESS);
+  } else if (currentMode == SPIRIT_LEVEL_MODE) {
+    strip.setBrightness(SPIRIT_LEVEL_BRIGHTNESS);
   } else {
     strip.setBrightness(OFF_MODE_BRIGHTNESS);
   }
@@ -402,6 +416,9 @@ void updateStateMachine() {
 
       if (currentMode == COUNT_MODE) {
         showCountModeIdle();
+        strip.show();
+      } else if (currentMode == SPIRIT_LEVEL_MODE) {
+        showSpiritLevel(0.0);
         strip.show();
       } else if (currentMode == OFF_MODE) {
         strip.clear();
@@ -603,6 +620,18 @@ void updateRainbowMode() {
   strip.show();
 }
 
+void updateSpiritLevelMode() {
+  applyModeBrightness();
+
+  float saberRight = 0.0;
+  float saberTip = 0.0;
+  float saberUp = 0.0;
+  readOrientation(saberRight, saberTip, saberUp);
+
+  showSpiritLevel(saberRight);
+  strip.show();
+}
+
 void handleMotionEffects() {
   sensors_event_t accelEvent;
   sensors_event_t gyroEvent;
@@ -780,6 +809,21 @@ uint32_t colorWheel(byte wheelPos, int whiteOffset) {
 
   int whiteValue = constrain(whiteOffset, 0, 180);
   return strip.Color(redValue, greenValue, blueValue, whiteValue);
+}
+
+void showSpiritLevel(float saberRight) {
+  strip.clear();
+
+  float normalizedTilt = clamp01(fabs(saberRight) / (GRAVITY_REFERENCE * 0.7));
+  int leftOuter = 14 - static_cast<int>(14.0 * normalizedTilt + 0.5);
+  int leftInner = 14 + static_cast<int>(15.0 * normalizedTilt + 0.5);
+  int rightInner = 44 - static_cast<int>(14.0 * normalizedTilt + 0.5);
+  int rightOuter = 44 + static_cast<int>(15.0 * normalizedTilt + 0.5);
+
+  strip.setPixelColor(leftOuter, strip.Color(0, 120, 0, 0));
+  strip.setPixelColor(leftInner, strip.Color(0, 120, 0, 0));
+  strip.setPixelColor(rightInner, strip.Color(0, 120, 0, 0));
+  strip.setPixelColor(rightOuter, strip.Color(0, 120, 0, 0));
 }
 
 float clamp01(float value) {
