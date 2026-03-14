@@ -1,0 +1,4 @@
+test Wled
+merge step 3 4
+add serial to read button controls ledd
+after on and off animation, link this to a button
