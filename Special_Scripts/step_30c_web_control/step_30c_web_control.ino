@@ -99,7 +99,8 @@ enum SaberMode {
 enum CountModeState {
   COUNT_IDLE_STATE,
   COUNT_SELECTING_STATE,
-  COUNT_RUNNING_STATE
+  COUNT_RUNNING_STATE,
+  COUNT_PAUSED_STATE
 };
 
 enum RainbowPaletteMode {
@@ -206,6 +207,9 @@ void handleWebControl();
 void handleWebStatus();
 void handleCaptivePortalRedirect();
 void refreshModeOutput();
+void startTimerFromWeb();
+void stopTimerFromWeb();
+void resetTimerFromWeb();
 int getModeBaseBrightness();
 uint32_t makeBladeColor(int red, int green, int blue, int white);
 void applyMasterHueShift(int& red, int& green, int& blue);
@@ -276,10 +280,17 @@ void handleButton() {
 
   if (buttonState == LOW && currentState == ON_STATE && currentMode == COUNT_MODE && !countHoldActive) {
     if (now - buttonPressStart >= COUNT_HOLD_START_MS) {
+      bool resetActiveCountdown =
+        (countModeState == COUNT_RUNNING_STATE || countModeState == COUNT_PAUSED_STATE);
       pendingShortPress = false;
       countHoldActive = true;
+      if (resetActiveCountdown) {
+        countModeSelectedMinutes = 0;
+        countModeMinutesRemaining = 0;
+        countModeWhiteLedCount = 0;
+      }
       countModeState = COUNT_SELECTING_STATE;
-      if (countModeSelectedMinutes <= 0) {
+      if (!resetActiveCountdown && countModeSelectedMinutes <= 0) {
         countModeSelectedMinutes = 1;
       }
       lastCountModeUpdate = now;
@@ -600,6 +611,12 @@ void updateCountMode() {
     return;
   }
 
+  if (countModeState == COUNT_PAUSED_STATE) {
+    renderCountMode(countModeWhiteLedCount, min(2, countModeMinutesRemaining));
+    strip.show();
+    return;
+  }
+
   if (countModeState == COUNT_RUNNING_STATE) {
     if (now - lastCountModeUpdate >= COUNT_DOWN_INTERVAL_MS) {
       lastCountModeUpdate = now;
@@ -846,7 +863,7 @@ void renderCountMode(int whiteLedCount, int minuteIndicatorCount) {
     int blueValue = 0;
     int whiteValue = 0;
     getCountModeBaseColor(0, redValue, greenValue, blueValue, whiteValue);
-    greenValue = min(255, greenValue + 40);
+    whiteValue = min(255, whiteValue + 40);
     strip.setPixelColor(0, makeBladeColor(redValue, greenValue, blueValue, whiteValue));
   }
 
@@ -856,7 +873,7 @@ void renderCountMode(int whiteLedCount, int minuteIndicatorCount) {
     int blueValue = 0;
     int whiteValue = 0;
     getCountModeBaseColor(1, redValue, greenValue, blueValue, whiteValue);
-    greenValue = min(255, greenValue + 40);
+    whiteValue = min(255, whiteValue + 40);
     strip.setPixelColor(1, makeBladeColor(redValue, greenValue, blueValue, whiteValue));
   }
 }
@@ -1100,7 +1117,7 @@ void handleWebRoot() {
       <button onclick="sendControl('mode=0')">Default</button>
       <button onclick="sendControl('mode=1')">Color</button>
       <button onclick="sendControl('mode=2')">Nightlight</button>
-      <button onclick="sendControl('mode=3')">Count</button>
+      <button onclick="sendControl('mode=3')">Timer</button>
       <button onclick="sendControl('mode=4')">Rainbow</button>
       <button onclick="sendControl('mode=5')">Level</button>
       <button class="alt" onclick="sendControl('mode=6')">LED Off</button>
@@ -1111,6 +1128,13 @@ void handleWebRoot() {
     <label for="hue">Master Hue <span id="hueValue" class="value"></span></label>
     <input id="hue" type="range" min="0" max="359" value="0" oninput="document.getElementById('hueValue').textContent=this.value + ' deg'">
     <button class="alt" onclick="sendSlider('hue', document.getElementById('hue').value)">Apply Hue</button>
+    <label for="timerMinutes">Timer Minutes <span id="timerMinutesValue" class="value"></span></label>
+    <input id="timerMinutes" type="number" min="1" max="60" value="5" oninput="document.getElementById('timerMinutesValue').textContent=this.value + ' min'">
+    <div class="buttons">
+      <button onclick="sendTimerAction('start')">Start</button>
+      <button class="alt" onclick="sendTimerAction('stop')">Stop</button>
+      <button class="alt" onclick="sendTimerAction('reset')">Reset</button>
+    </div>
     <div class="status" id="status">Loading status...</div>
   </div>
   <script>
@@ -1122,18 +1146,28 @@ void handleWebRoot() {
       await fetch('/control?' + name + '=' + encodeURIComponent(value));
       await refreshStatus();
     }
+    async function sendTimerAction(action) {
+      const minutes = document.getElementById('timerMinutes').value;
+      await fetch('/control?timerAction=' + encodeURIComponent(action) + '&timerMinutes=' + encodeURIComponent(minutes));
+      await refreshStatus();
+    }
     async function refreshStatus() {
       const response = await fetch('/status');
       const status = await response.json();
       document.getElementById('brightness').value = status.masterBrightness;
       document.getElementById('hue').value = status.masterHue;
+      document.getElementById('timerMinutes').value = status.timerSelectedMinutes;
       document.getElementById('brightnessValue').textContent = status.masterBrightness + '%';
       document.getElementById('hueValue').textContent = status.masterHue + ' deg';
+      document.getElementById('timerMinutesValue').textContent = status.timerSelectedMinutes + ' min';
       document.getElementById('status').innerHTML =
         'State: <span class="value">' + status.state + '</span><br>' +
         'Mode: <span class="value">' + status.mode + '</span><br>' +
         'Brightness: <span class="value">' + status.masterBrightness + '%</span><br>' +
-                'Hue: <span class="value">' + status.masterHue + ' deg</span>';
+        'Hue: <span class="value">' + status.masterHue + ' deg</span><br>' +
+        'Timer state: <span class="value">' + status.timerState + '</span><br>' +
+        'Timer minutes: <span class="value">' + status.timerSelectedMinutes + '</span><br>' +
+        'Minutes remaining: <span class="value">' + status.timerMinutesRemaining + '</span>';
     }
     refreshStatus();
     setInterval(refreshStatus, 2000);
@@ -1146,6 +1180,13 @@ void handleWebRoot() {
 }
 
 void handleWebControl() {
+  if (server.hasArg("timerMinutes")) {
+    countModeSelectedMinutes = constrain(server.arg("timerMinutes").toInt(), 1, LED_COUNT);
+    if (currentMode == COUNT_MODE && countModeState == COUNT_IDLE_STATE) {
+      refreshModeOutput();
+    }
+  }
+
   if (server.hasArg("state")) {
     String stateValue = server.arg("state");
 
@@ -1159,6 +1200,18 @@ void handleWebControl() {
   if (server.hasArg("mode")) {
     int modeValue = constrain(server.arg("mode").toInt(), 0, 6);
     setMode(static_cast<SaberMode>(modeValue), false);
+  }
+
+  if (server.hasArg("timerAction")) {
+    String timerAction = server.arg("timerAction");
+
+    if (timerAction == "start") {
+      startTimerFromWeb();
+    } else if (timerAction == "stop") {
+      stopTimerFromWeb();
+    } else if (timerAction == "reset") {
+      resetTimerFromWeb();
+    }
   }
 
   if (server.hasArg("brightness")) {
@@ -1185,6 +1238,20 @@ void handleWebStatus() {
   json += masterBrightnessPercent;
   json += ",\"masterHue\":";
   json += masterHueDegrees;
+  json += ",\"timerState\":\"";
+  if (countModeState == COUNT_IDLE_STATE) {
+    json += "Idle";
+  } else if (countModeState == COUNT_SELECTING_STATE) {
+    json += "Selecting";
+  } else if (countModeState == COUNT_RUNNING_STATE) {
+    json += "Running";
+  } else {
+    json += "Paused";
+  }
+  json += "\",\"timerSelectedMinutes\":";
+  json += max(1, countModeSelectedMinutes);
+  json += ",\"timerMinutesRemaining\":";
+  json += countModeMinutesRemaining;
   json += "}";
 
   server.send(200, "application/json", json);
@@ -1196,6 +1263,48 @@ void handleCaptivePortalRedirect() {
   server.sendHeader("Expires", "-1");
   server.sendHeader("Location", "http://192.168.4.1/");
   server.send(302, "text/plain", "Redirecting to Lightsaber Control");
+}
+
+void startTimerFromWeb() {
+  if (currentMode != COUNT_MODE) {
+    setMode(COUNT_MODE, false);
+  }
+
+  if (countModeSelectedMinutes <= 0) {
+    countModeSelectedMinutes = 1;
+  }
+
+  if (countModeState == COUNT_PAUSED_STATE && countModeMinutesRemaining > 0 && countModeWhiteLedCount > 0) {
+    countModeState = COUNT_RUNNING_STATE;
+    lastCountModeUpdate = millis();
+    Serial.println("Timer -> resumed from web");
+    return;
+  }
+
+  countModeMinutesRemaining = countModeSelectedMinutes;
+  countModeWhiteLedCount = LED_COUNT;
+  countModeState = COUNT_RUNNING_STATE;
+  lastCountModeUpdate = millis();
+  Serial.println("Timer -> started from web");
+}
+
+void stopTimerFromWeb() {
+  if (currentMode == COUNT_MODE && countModeState == COUNT_RUNNING_STATE) {
+    countModeState = COUNT_PAUSED_STATE;
+    Serial.println("Timer -> paused from web");
+  }
+}
+
+void resetTimerFromWeb() {
+  countModeState = COUNT_IDLE_STATE;
+  countModeMinutesRemaining = 0;
+  countModeWhiteLedCount = 0;
+  countHoldActive = false;
+  Serial.println("Timer -> reset from web");
+
+  if (currentMode == COUNT_MODE) {
+    refreshModeOutput();
+  }
 }
 
 void refreshModeOutput() {
@@ -1210,7 +1319,13 @@ void refreshModeOutput() {
   }
 
   if (currentMode == COUNT_MODE) {
-    showCountModeIdle();
+    if (countModeState == COUNT_RUNNING_STATE || countModeState == COUNT_PAUSED_STATE) {
+      renderCountMode(countModeWhiteLedCount, min(2, countModeMinutesRemaining));
+    } else if (countModeSelectedMinutes > 0) {
+      renderCountMode(countModeSelectedMinutes, min(2, countModeSelectedMinutes));
+    } else {
+      showCountModeIdle();
+    }
     strip.show();
     return;
   }

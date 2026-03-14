@@ -245,10 +245,16 @@ void handleButton() {
 
   if (buttonState == LOW && currentState == ON_STATE && currentMode == COUNT_MODE && !countHoldActive) {
     if (now - buttonPressStart >= COUNT_HOLD_START_MS) {
+      bool resetRunningCountdown = (countModeState == COUNT_RUNNING_STATE);
       pendingShortPress = false;
       countHoldActive = true;
+      if (resetRunningCountdown) {
+        countModeSelectedMinutes = 0;
+        countModeMinutesRemaining = 0;
+        countModeWhiteLedCount = 0;
+      }
       countModeState = COUNT_SELECTING_STATE;
-      if (countModeSelectedMinutes <= 0) {
+      if (!resetRunningCountdown && countModeSelectedMinutes <= 0) {
         countModeSelectedMinutes = 1;
       }
       lastCountModeUpdate = now;
@@ -834,7 +840,7 @@ void renderCountMode(int whiteLedCount, int minuteIndicatorCount) {
     int blueValue = 0;
     int whiteValue = 0;
     getCountModeBaseColor(0, redValue, greenValue, blueValue, whiteValue);
-    greenValue = min(255, greenValue + 40);
+    whiteValue = min(255, whiteValue + 40);
     strip.setPixelColor(0, strip.Color(redValue, greenValue, blueValue, whiteValue));
   }
 
@@ -844,7 +850,7 @@ void renderCountMode(int whiteLedCount, int minuteIndicatorCount) {
     int blueValue = 0;
     int whiteValue = 0;
     getCountModeBaseColor(1, redValue, greenValue, blueValue, whiteValue);
-    greenValue = min(255, greenValue + 40);
+    whiteValue = min(255, whiteValue + 40);
     strip.setPixelColor(1, strip.Color(redValue, greenValue, blueValue, whiteValue));
   }
 }
