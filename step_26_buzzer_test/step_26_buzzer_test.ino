@@ -5,7 +5,7 @@
 #if USE_SUPER_MINI_PINS
 const int BUZZER_PIN = 10;
 #else
-const int BUZZER_PIN = D4;
+const int BUZZER_PIN = D5;
 #endif
 
 void setup() {
